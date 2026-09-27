@@ -6,6 +6,7 @@
 -- Estimated Server Pos
 -- Auto Perk
 -- Tool Tint
+-- Custom Chat
 
 local table_insert = table.insert
 local nicolas = {}
@@ -59,6 +60,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
 local LocalPlayer = Players.LocalPlayer
 local SpectateService = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("SpectateService"))
 
@@ -1163,7 +1165,6 @@ itemTintSection:AddSlider("Tint Transparency", 1, 10, 5, function(value)
         end
     end
 end)
-        
 
 itemTintSection:AddColorpicker("Tool Tint Color", Color3.fromRGB(255, 255, 255), function(color)
     toolTintColor = color
@@ -1178,6 +1179,200 @@ itemTintSection:AddColorpicker("Tool Tint Color", Color3.fromRGB(255, 255, 255),
                 end
             end
         end
+    end
+end)
+
+local chatSection = myTab:AddSection("Custom Chat", "Customize your chat!")
+chatSection:AddParagraph("Additional Info", "custom chat sound requires the sound to be from github\n\nCredits: @drowsynicolas")
+
+local chatColorEnabled = false
+local chatSoundEnabled = false
+local muteOthersChatSound = false
+local chatBubbleColor = Color3.fromRGB(255, 255, 255)
+local chatTextColor = Color3.fromRGB(0, 0, 0)
+local originalBubbleColor = nil
+local originalTextColor = nil
+local currentSoundId = nil
+local chattedConnections = {}
+local playerAddedConn = nil
+
+local function getBubbleConfig()
+    return TextChatService:FindFirstChildOfClass("BubbleChatConfiguration")
+end
+
+local function applyChatColors()
+    local config = getBubbleConfig()
+    if not config then return end
+    if originalBubbleColor == nil then
+        originalBubbleColor = config.BackgroundColor3
+        originalTextColor = config.TextColor3
+    end
+    config.BackgroundColor3 = chatBubbleColor
+    config.TextColor3 = chatTextColor
+end
+
+local function restoreChatColors()
+    local config = getBubbleConfig()
+    if not config then return end
+    if originalBubbleColor then
+        config.BackgroundColor3 = originalBubbleColor
+        config.TextColor3 = originalTextColor
+    end
+end
+
+local function hashURL(url)
+    local hash = 5381
+    for i = 1, #url do
+        hash = ((hash * 33) + string.byte(url, i)) % 4294967296
+    end
+    return string.format("%x", hash)
+end
+
+local function getFilename(url)
+    local ext = url:match("%.([%w]+)$") or "mp3"
+    return "chatSound_" .. hashURL(url) .. "." .. ext
+end
+
+local function buildURL(input)
+    local path = input:gsub("^https://raw%.githubusercontent%.com", "")
+    if path:sub(1, 1) ~= "/" then
+        path = "/" .. path
+    end
+    return "https://raw.githubusercontent.com" .. path
+end
+
+local function loadChatSound(input)
+    if not input or input == "" then return end
+
+    if not isfile or not writefile or not game.HttpGet then
+        shared.Notify("Custom Chat: executor doesn't support file downloads", 3)
+        return
+    end
+
+    local getasset = getcustomasset or getsynasset
+    if not getasset then
+        shared.Notify("Custom Chat: executor doesn't support custom assets", 3)
+        return
+    end
+
+    local fullURL = buildURL(input)
+    local fileName = getFilename(fullURL)
+
+    if not isfile(fileName) then
+        shared.Notify("Custom Chat: downloading...", 2)
+        local success = pcall(function()
+            writefile(fileName, game:HttpGet(fullURL))
+        end)
+        if not success then
+            shared.Notify("Custom Chat: download failed", 3)
+            return
+        end
+    end
+
+    local success, soundId = pcall(getasset, fileName)
+    if success and soundId then
+        currentSoundId = soundId
+        shared.Notify("Custom Chat: sound loaded", 2)
+    else
+        shared.Notify("Custom Chat: failed to load sound", 3)
+    end
+end
+
+local function playChatSound(player)
+    if not currentSoundId then return end
+    if muteOthersChatSound and player ~= LocalPlayer then return end
+    local char = player.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local sound = Instance.new("Sound")
+    sound.SoundId = currentSoundId
+    sound.Volume = 0.5
+    sound.Parent = hrp
+    sound:Play()
+
+    sound.Ended:Connect(function()
+        sound:Destroy()
+    end)
+end
+
+local function hookPlayer(player)
+    if chattedConnections[player] then return end
+    chattedConnections[player] = player.Chatted:Connect(function()
+        if chatSoundEnabled then
+            playChatSound(player)
+        end
+    end)
+end
+
+local function enableChatSound()
+    chatSoundEnabled = true
+    for _, player in ipairs(Players:GetPlayers()) do
+        hookPlayer(player)
+    end
+    if not playerAddedConn then
+        playerAddedConn = Players.PlayerAdded:Connect(hookPlayer)
+    end
+end
+
+local function disableChatSound()
+    chatSoundEnabled = false
+    for player, conn in pairs(chattedConnections) do
+        conn:Disconnect()
+    end
+    chattedConnections = {}
+    if playerAddedConn then
+        playerAddedConn:Disconnect()
+        playerAddedConn = nil
+    end
+end
+
+Players.PlayerRemoving:Connect(function(player)
+    local conn = chattedConnections[player]
+    if conn then
+        conn:Disconnect()
+        chattedConnections[player] = nil
+    end
+end)
+
+chatSection:AddToggle("Custom Chat Color", function(bool)
+    chatColorEnabled = bool
+    if bool then
+        applyChatColors()
+    else
+        restoreChatColors()
+    end
+end)
+
+chatSection:AddToggle("Custom Chat Sound", function(bool)
+    if bool then
+        enableChatSound()
+    else
+        disableChatSound()
+    end
+end)
+
+chatSection:AddToggle("Mute Others Chat Sound", function(bool)
+    muteOthersChatSound = bool
+end)
+
+chatSection:AddTextBox("Sound URL", function(text)
+    if text == "" then return end
+    loadChatSound(text)
+end)
+
+chatSection:AddColorpicker("Chat Bubble Color", Color3.fromRGB(255, 255, 255), function(color)
+    chatBubbleColor = color
+    if chatColorEnabled then
+        applyChatColors()
+    end
+end)
+
+chatSection:AddColorpicker("Chat Text Color", Color3.fromRGB(0, 0, 0), function(color)
+    chatTextColor = color
+    if chatColorEnabled then
+        applyChatColors()
     end
 end)
 
@@ -1206,4 +1401,6 @@ RootNicolas:GiveTask(function()
     disableServerPos()
     stopAutoPerk()
     disableToolTint()
+    disableChatSound()
+    restoreChatColors()
 end)
