@@ -53,7 +53,7 @@ end
 local RootNicolas = nicolas.new()
 local shared = odh_shared_plugins
 
-local myTab = shared.CreateTab("tuff stuff", "/nonchalantnicolas/drowsynicolas-ODH-icon/refs/heads/main/IMG_5786")
+local myTab = shared.CreateTab("tuff stuff", "/drowsynicolas/drowsynicolas-ODH-icon/refs/heads/main/image")
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
