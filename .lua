@@ -1183,7 +1183,7 @@ itemTintSection:AddColorpicker("Tool Tint Color", Color3.fromRGB(255, 255, 255),
 end)
 
 local chatSection = myTab:AddSection("Custom Chat", "Customize your chat!")
-chatSection:AddParagraph("Additional Info", "custom chat sound requires the sound to be from github\n\nCredits: @drowsynicolas")
+chatSection:AddParagraph("Additional Info", "custom chat sound requires the sound to be from github. example: /nonchalantnicolas/yoshi-lick/main/copy_588622E8-9E6A-4DD1-9673-1858746082F1.mp3\n\nCredits: @drowsynicolas")
 
 local chatColorEnabled = false
 local chatSoundEnabled = false
