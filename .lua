@@ -1242,77 +1242,42 @@ local function buildURL(input)
 end
 
 local function loadChatSound(input)
-    if type(input) ~= "string" then
-        shared.Notify("Chat Sound: input is not a string", 3)
-        return
-    end
-
+    if type(input) ~= "string" then return end
     input = input:gsub("^%s+", ""):gsub("%s+$", "")
+    if input == "" then return end
 
-    if input == "" then
-        shared.Notify("Chat Sound: textbox is empty", 3)
-        return
-    end
-
-    if not isfile then
-        shared.Notify("Chat Sound: 'isfile' is missing", 3)
-        return
-    end
-    if not writefile then
-        shared.Notify("Chat Sound: 'writefile' is missing", 3)
-        return
-    end
-    if not game.HttpGet then
-        shared.Notify("Chat Sound: 'game.HttpGet' is missing", 3)
+    if not isfile or not writefile or not game.HttpGet then
+        shared.Notify("Custom Chat: executor doesn't support file downloads", 3)
         return
     end
 
     local getasset = getcustomasset or getsynasset
     if not getasset then
-        shared.Notify("Chat Sound: no 'getcustomasset' or 'getsynasset'", 3)
+        shared.Notify("Custom Chat: executor doesn't support custom assets", 3)
         return
     end
 
     local fullURL = buildURL(input)
     local fileName = getFilename(fullURL)
 
-    shared.Notify("Chat Sound: URL built -> " .. fullURL, 3)
-
     if not isfile(fileName) then
-        shared.Notify("Chat Sound: downloading...", 3)
-        local success, err = pcall(function()
+        shared.Notify("Custom Chat: downloading...", 2)
+        local success = pcall(function()
             writefile(fileName, game:HttpGet(fullURL))
         end)
         if not success then
-            shared.Notify("Chat Sound: writefile failed -> " .. tostring(err), 5)
+            shared.Notify("Custom Chat: download failed", 3)
             return
         end
-        if not isfile(fileName) then
-            shared.Notify("Chat Sound: file not written after download", 5)
-            return
-        end
-        local size = #readfile(fileName)
-        shared.Notify("Chat Sound: downloaded (" .. size .. " bytes)", 3)
-        if size < 1000 then
-            shared.Notify("Chat Sound: file too small, likely an error page", 5)
-            return
-        end
-    else
-        shared.Notify("Chat Sound: using cached file", 3)
     end
 
     local success, soundId = pcall(getasset, fileName)
-    if not success then
-        shared.Notify("Chat Sound: getasset errored -> " .. tostring(soundId), 5)
-        return
+    if success and soundId then
+        currentSoundId = soundId
+        shared.Notify("Custom Chat: sound loaded", 2)
+    else
+        shared.Notify("Custom Chat: failed to load sound", 3)
     end
-    if not soundId or soundId == "" then
-        shared.Notify("Chat Sound: getasset returned empty", 5)
-        return
-    end
-
-    currentSoundId = soundId
-    shared.Notify("Chat Sound: loaded successfully", 3)
 end
 
 local function playChatSound(player)
