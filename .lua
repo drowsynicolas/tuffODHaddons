@@ -7,6 +7,7 @@
 -- Auto Perk
 -- Tool Tint
 -- Custom Chat
+-- Emotes
 
 local table_insert = table.insert
 local nicolas = {}
@@ -1378,6 +1379,52 @@ chatSection:AddColorpicker("Chat Text Color", Color3.fromRGB(0, 0, 0), function(
     end
 end)
 
+local emotesSection = myTab:AddSection("Emotes", "play any emote")
+emotesSection:AddParagraph("Additional Info", "play any emote with a keybind\n\nCredits: @drowsynicolas")
+
+local emoteKeybindsEnabled = false
+
+local function playEmote(emoteName)
+    if not emoteKeybindsEnabled then return end
+    local char = LocalPlayer.Character
+    if not char then return end
+    local animate = char:FindFirstChild("Animate")
+    if not animate then return end
+    local remote = animate:FindFirstChild("PlayEmote")
+    if not remote then return end
+    pcall(function()
+        remote:Invoke(emoteName)
+    end)
+end
+
+emotesSection:AddToggle("Emote keybinds", function(bool)
+    emoteKeybindsEnabled = bool
+end)
+
+emotesSection:AddKeybind("Sit", "null", function()
+    playEmote("sit")
+end)
+
+emotesSection:AddKeybind("Dab", "null", function()
+    playEmote("dab")
+end)
+
+emotesSection:AddKeybind("Ninja", "null", function()
+    playEmote("ninja")
+end)
+
+emotesSection:AddKeybind("Zen", "null", function()
+    playEmote("zen")
+end)
+
+emotesSection:AddKeybind("Zombie", "null", function()
+    playEmote("zombie")
+end)
+
+emotesSection:AddKeybind("Headless", "null", function()
+    playEmote("headless")
+end)
+
 RootNicolas:GiveTask(function()
     gunFeatures.blockAnims = false
     gunFeatures.equipSound = false
@@ -1405,4 +1452,5 @@ RootNicolas:GiveTask(function()
     disableToolTint()
     disableChatSound()
     restoreChatColors()
+    emoteKeybindsEnabled = false
 end)
