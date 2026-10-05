@@ -1402,14 +1402,14 @@ emotesSection:AddToggle("Emote keybinds", function(bool)
 end)
 
 emotesSection:AddKeybind("Sit", "null", function()
-    playEmote("sit")
+    playEmote("sit2")
 end)
 
 emotesSection:AddKeybind("Dab", "null", function()
     playEmote("dab")
 end)
 
-emotesSection:AddKeybind("Ninja", "null", function()
+emotesSection:AddKeybind("Ninja's Rest", "null", function()
     playEmote("ninja")
 end)
 
