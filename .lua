@@ -1059,25 +1059,49 @@ local toolTintChildConnection = nil
 
 local function applyToolTint(tool)
     if not tool:IsA("Tool") then return end
+    local handle = tool:FindFirstChild("Handle")
+    if not handle then return end
 
-    local highlight = tool:FindFirstChild("ToolTint")
-
-    if not highlight then
-        highlight = Instance.new("Highlight")
-        highlight.Name = "ToolTint"
-        highlight.OutlineTransparency = 1
-        highlight.DepthMode = Enum.HighlightDepthMode.Occluded
-        highlight.Adornee = tool
-        highlight.Parent = tool
+    local didVertexColor = false
+    for _, mesh in ipairs(handle:GetChildren()) do
+        if mesh:IsA("SpecialMesh") or mesh:IsA("BlockMesh") or mesh:IsA("CylinderMesh") or mesh:IsA("FileMesh") then
+            if not mesh.TextureId or mesh.TextureId == "" then
+                mesh.VertexColor = Vector3.new(toolTintColor.R, toolTintColor.G, toolTintColor.B)
+                didVertexColor = true
+            end
+        end
     end
 
-    highlight.FillColor = toolTintColor
-    highlight.FillTransparency = toolTintTransparency
+    local highlight = tool:FindFirstChild("ToolTint")
+    if didVertexColor then
+        if highlight then
+            highlight:Destroy()
+        end
+    else
+        if not highlight then
+            highlight = Instance.new("Highlight")
+            highlight.Name = "ToolTint"
+            highlight.OutlineTransparency = 1
+            highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+            highlight.Adornee = tool
+            highlight.Parent = tool
+        end
+        highlight.FillColor = toolTintColor
+        highlight.FillTransparency = toolTintTransparency
+    end
 end
 
 local function removeToolTint(tool)
     if not tool:IsA("Tool") then return end
-    local highlight = tool:FindFirstChild("ToolTint")
+    local handle = tool:FindFirstChild("Handle")
+    if handle then
+        for _, mesh in ipairs(handle:GetChildren()) do
+            if mesh:IsA("SpecialMesh") or mesh:IsA("BlockMesh") or mesh:IsA("CylinderMesh") or mesh:IsA("FindFileMesh") then
+                mesh.VertexColor = Vector3.new(1, 1, 1)
+            end
+        end
+    end
+    local highlight = tool:FirstChild("ToolTint")
     if highlight then
         highlight:Destroy()
     end
@@ -1174,10 +1198,7 @@ itemTintSection:AddColorpicker("Tool Tint Color", Color3.fromRGB(255, 255, 255),
     if char then
         for _, object in ipairs(char:GetChildren()) do
             if object:IsA("Tool") then
-                local highlight = object:FindFirstChild("ToolTint")
-                if highlight then
-                    highlight.FillColor = color
-                end
+                applyToolTint(object)
             end
         end
     end
