@@ -609,6 +609,106 @@ controllerSection:AddKeybind("Toggle Spectate", "ButtonR3", function()
     end
 end)
 
+local bombJumpParagraph = controllerSection:AddParagraph("Bomb Jump", "All credits goes to @lzzzx")
+
+local bombJumpEnabled = false
+local bombJumpCooldown = false
+local bombJumpDebounce = false
+
+local BOMB_TYPES = {
+    {name = "FakeBomb", cooldown = 22},
+    {name = "GoldBomb", cooldown = 4},
+}
+
+local function getBombFromCharacter()
+    local char = LocalPlayer.Character
+    if not char then return nil, nil end
+
+    local found = {}
+    for _, bombType in ipairs(BOMB_TYPES) do
+        local bomb = char:FindFirstChild(bombType.name)
+        if bomb then
+            table.insert(found, {tool = bomb, config = bombType})
+        end
+    end
+
+    if #found == 1 then
+        return found[1].tool, found[1].config
+    end
+    return nil, nil
+end
+
+local function bombJumpIsInAir()
+    local char = LocalPlayer.Character
+    if not char then return false end
+
+    local humanoid = char:FindFirstChild("Humanoid")
+    if not humanoid then return false end
+
+    local state = humanoid:GetState()
+    return state == Enum.HumanoidStateType.Jumping
+        or state == Enum.HumanoidStateType.FallingDown
+        or state == Enum.HumanoidStateType.Freefall
+end
+
+local function startBombJumpCooldown(duration)
+    bombJumpCooldown = true
+    task.spawn(function()
+        task.wait(duration)
+        bombJumpCooldown = false
+    end)
+end
+
+local function performBombJump()
+    if not bombJumpEnabled then return end
+    if bombJumpCooldown or bombJumpDebounce then return end
+    if not bombJumpIsInAir() then return end
+
+    local bomb, config = getBombFromCharacter()
+    if not bomb then return end
+
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    bombJumpDebounce = true
+
+    local remote = bomb:FindFirstChild("Remote")
+    if remote then
+        pcall(function()
+            remote:FireServer(CFrame.new(hrp.Position), 50)
+        end)
+    end
+
+    hrp.AssemblyLinearVelocity = Vector3.new(
+        hrp.AssemblyLinearVelocity.X,
+        58,
+        hrp.AssemblyLinearVelocity.Z
+    )
+
+    local humanoid = char:FindFirstChild("Humanoid")
+    if humanoid then
+        pcall(function()
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end)
+    end
+
+    startBombJumpCooldown(config.cooldown)
+
+    task.spawn(function()
+        task.wait(0.5)
+        bombJumpDebounce = false
+    end)
+end
+
+controllerSection:AddToggle("Enable Bomb Jump Keybinds", function(bool)
+    bombJumpEnabled = bool
+end)
+
+controllerSection:AddKeybind("Bomb Jump", "null", function()
+    performBombJump()
+end)
+
 local waterFeatures = {
     waterImmunity = false,
 }
