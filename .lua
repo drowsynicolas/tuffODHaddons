@@ -782,6 +782,8 @@ local serverPosHealthConnection = nil
 local serverPosCharAddedConn = nil
 local serverPosHistory = {}
 local serverPosColor = Color3.new(1, 1, 1)
+local serverPosTransparency = 0.5
+local serverPosHideInFirstPerson = false
 
 local function destroyServerPosMarker()
     if serverPosConnection then
@@ -817,7 +819,7 @@ local function createServerPosMarker(character)
     serverPosMarker.Size = Vector3.new(2, 2, 1)
     serverPosMarker.Color = serverPosColor
     serverPosMarker.Material = Enum.Material.Plastic
-    serverPosMarker.Transparency = 0.5
+    serverPosMarker.Transparency = serverPosTransparency
     serverPosMarker.Anchored = true
     serverPosMarker.CanCollide = false
     serverPosMarker.CanTouch = false
@@ -855,6 +857,18 @@ local function createServerPosMarker(character)
         end
 
         serverPosMarker.CFrame = CFrame.new(closest.position) * closest.rotation
+
+        if serverPosHideInFirstPerson then
+            local head = serverPosRoot.Parent and serverPosRoot.Parent:FindFirstChild("Head")
+            if head then
+                local camDist = (workspace.CurrentCamera.CFrame.Position - head.Position).Magnitude
+                serverPosMarker.Transparency = camDist < 1 and 1 or serverPosTransparency
+            else
+                serverPosMarker.Transparency = serverPosTransparency
+            end
+        else
+            serverPosMarker.Transparency = serverPosTransparency
+        end
     end)
 end
 
@@ -887,6 +901,20 @@ serverPosSection:AddToggle("Show Server Pos", function(bool)
         enableServerPos()
     else
         disableServerPos()
+    end
+end)
+
+serverPosSection:AddToggle("Hide In First Person", function(bool)
+    serverPosHideInFirstPerson = bool
+    if not bool and serverPosMarker then
+        serverPosMarker.Transparency = serverPosTransparency
+    end
+end)
+
+serverPosSection:AddSlider("Marker Transparency", 1, 10, 5, function(value)
+    serverPosTransparency = value / 10
+    if serverPosMarker and not serverPosHideInFirstPerson then
+        serverPosMarker.Transparency = serverPosTransparency
     end
 end)
 
