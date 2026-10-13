@@ -615,6 +615,11 @@ local bombJumpEnabled = false
 local bombJumpCooldown = false
 local bombJumpDebounce = false
 
+LocalPlayer.CharacterAdded:Connect(function()
+    bombJumpCooldown = false
+    bombJumpDebounce = false
+end)
+
 local BOMB_TYPES = {
     {name = "FakeBomb", cooldown = 22},
     {name = "GoldBomb", cooldown = 4},
