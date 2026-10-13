@@ -614,16 +614,49 @@ local bombJumpParagraph = controllerSection:AddParagraph("Bomb Jump", "All credi
 local bombJumpEnabled = false
 local bombJumpCooldown = false
 local bombJumpDebounce = false
-
-LocalPlayer.CharacterAdded:Connect(function()
-    bombJumpCooldown = false
-    bombJumpDebounce = false
-end)
+local autoGetBomb = false
+local autoGetBombCharConn = nil
 
 local BOMB_TYPES = {
     {name = "FakeBomb", cooldown = 22},
     {name = "GoldBomb", cooldown = 4},
 }
+
+local function giveBomb()
+    local remote = ReplicatedStorage:FindFirstChild("Remotes")
+        and ReplicatedStorage.Remotes:FindFirstChild("Extras")
+        and ReplicatedStorage.Remotes.Extras:FindFirstChild("ReplicateToy")
+    if remote then
+        pcall(function()
+            remote:InvokeServer("FakeBomb")
+        end)
+    end
+end
+
+local function startAutoGetBomb()
+    if autoGetBombCharConn then return end
+    autoGetBombCharConn = LocalPlayer.CharacterAdded:Connect(function()
+        task.wait(1)
+        if autoGetBomb then
+            giveBomb()
+        end
+    end)
+    if LocalPlayer.Character then
+        giveBomb()
+    end
+end
+
+local function stopAutoGetBomb()
+    if autoGetBombCharConn then
+        autoGetBombCharConn:Disconnect()
+        autoGetBombCharConn = nil
+    end
+end
+
+LocalPlayer.CharacterAdded:Connect(function()
+    bombJumpCooldown = false
+    bombJumpDebounce = false
+end)
 
 local function getBombFromCharacter()
     local char = LocalPlayer.Character
@@ -664,6 +697,18 @@ local function startBombJumpCooldown(duration)
     end)
 end
 
+local function getMyFreshHandle()
+    for _, obj in ipairs(workspace:GetChildren()) do
+        if obj.Name == "Handle" and obj:IsA("BasePart") then
+            local creator = obj:FindFirstChild("creator")
+            if creator and creator.Value == LocalPlayer then
+                return obj
+            end
+        end
+    end
+    return nil
+end
+
 local function performBombJump()
     if not bombJumpEnabled then return end
     if bombJumpCooldown or bombJumpDebounce then return end
@@ -682,6 +727,24 @@ local function performBombJump()
     if remote then
         pcall(function()
             remote:FireServer(CFrame.new(hrp.Position), 50)
+        end)
+    end
+
+    task.wait(0.05)
+
+    local handle = getMyFreshHandle()
+    if handle then
+        pcall(function()
+            handle:SetNetworkOwner(LocalPlayer)
+            handle.Anchored = true
+            handle.CFrame = CFrame.new(hrp.Position - Vector3.new(0, 3.5, 0))
+        end)
+
+        task.wait(0.2)
+
+        pcall(function()
+            handle.Anchored = false
+            handle:SetNetworkOwner(nil)
         end)
     end
 
@@ -708,6 +771,15 @@ end
 
 controllerSection:AddToggle("Enable Bomb Jump Keybinds", function(bool)
     bombJumpEnabled = bool
+end)
+
+controllerSection:AddToggle("Auto Get Bomb", function(bool)
+    autoGetBomb = bool
+    if bool then
+        startAutoGetBomb()
+    else
+        stopAutoGetBomb()
+    end
 end)
 
 controllerSection:AddKeybind("Bomb Jump", "null", function()
@@ -1229,12 +1301,12 @@ local function removeToolTint(tool)
     local handle = tool:FindFirstChild("Handle")
     if handle then
         for _, mesh in ipairs(handle:GetChildren()) do
-            if mesh:IsA("SpecialMesh") or mesh:IsA("BlockMesh") or mesh:IsA("CylinderMesh") or mesh:IsA("FindFileMesh") then
+            if mesh:IsA("SpecialMesh") or mesh:IsA("BlockMesh") or mesh:IsA("CylinderMesh") or mesh:IsA("FileMesh") then
                 mesh.VertexColor = Vector3.new(1, 1, 1)
             end
         end
     end
-    local highlight = tool:FirstChild("ToolTint")
+    local highlight = tool:FindFirstChild("ToolTint")
     if highlight then
         highlight:Destroy()
     end
@@ -1607,4 +1679,5 @@ RootNicolas:GiveTask(function()
     disableChatSound()
     restoreChatColors()
     emoteKeybindsEnabled = false
+    stopAutoGetBomb()
 end)
