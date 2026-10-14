@@ -697,14 +697,99 @@ local function startBombJumpCooldown(duration)
     end)
 end
 
-local function getMyFreshHandle()
-    for _, obj in ipairs(workspace:GetChildren()) do
-        if obj.Name == "Handle" and obj:IsA("BasePart") then
-            local creator = obj:FindFirstChild("creator")
-            if creator and creator.Value == LocalPlayer then
-                return obj
-            end
+-- ─── Bomb Handle Tracker ───────────────────────────────────────────────
+-- Maintains an ordered list of bomb handles owned by LocalPlayer.
+-- Newest is always last. Old handles are pruned automatically when they
+-- leave the workspace (explode / despawn).
+local myHandles = {}
+local handleWatcherConn = nil
+local handleRemovedConns = {}
+
+local function isMyHandle(obj)
+    return obj.Name == "Handle"
+        and obj:IsA("BasePart")
+        and obj:FindFirstChild("creator")
+        and obj.creator.Value == LocalPlayer
+end
+
+local function untrackHandle(handle)
+    local conn = handleRemovedConns[handle]
+    if conn then
+        conn:Disconnect()
+        handleRemovedConns[handle] = nil
+    end
+    for i, h in ipairs(myHandles) do
+        if h == handle then
+            table.remove(myHandles, i)
+            break
         end
+    end
+end
+
+local function trackHandle(handle)
+    for _, h in ipairs(myHandles) do
+        if h == handle then return end
+    end
+
+    table.insert(myHandles, handle)
+
+    local conn
+    conn = handle.AncestryChanged:Connect(function(_, parent)
+        if not parent then
+            untrackHandle(handle)
+        end
+    end)
+    handleRemovedConns[handle] = conn
+end
+
+local function startHandleWatcher()
+    stopHandleWatcher()
+
+    for _, obj in ipairs(workspace:GetChildren()) do
+        if isMyHandle(obj) then
+            trackHandle(obj)
+        end
+    end
+
+    handleWatcherConn = workspace.DescendantAdded:Connect(function(obj)
+        if isMyHandle(obj) then
+            trackHandle(obj)
+        end
+    end)
+end
+
+local function stopHandleWatcher()
+    if handleWatcherConn then
+        handleWatcherConn:Disconnect()
+        handleWatcherConn = nil
+    end
+    for _, conn in pairs(handleRemovedConns) do
+        conn:Disconnect()
+    end
+    handleRemovedConns = {}
+    myHandles = {}
+end
+
+-- Returns the newest handle owned by LocalPlayer, or nil.
+local function getNewestHandle()
+    for i = #myHandles, 1, -1 do
+        local h = myHandles[i]
+        if h and h.Parent then
+            return h
+        end
+    end
+    return nil
+end
+
+-- Polls for a handle for up to `timeout` seconds. Handles high-ping
+-- replication delays gracefully.
+local function waitForNewestHandle(timeout)
+    timeout = timeout or 0.2
+    local deadline = tick() + timeout
+    while tick() < deadline do
+        local h = getNewestHandle()
+        if h then return h end
+        task.wait(0.02)
     end
     return nil
 end
@@ -732,7 +817,7 @@ local function performBombJump()
 
     task.wait(0.05)
 
-    local handle = getMyFreshHandle()
+    local handle = waitForNewestHandle(0.2)
     if handle then
         pcall(function()
             handle:SetNetworkOwner(LocalPlayer)
@@ -740,7 +825,7 @@ local function performBombJump()
             handle.CFrame = CFrame.new(hrp.Position - Vector3.new(0, 3.5, 0))
         end)
 
-        task.wait(0.2)
+        task.wait(0.35)
 
         pcall(function()
             handle.Anchored = false
@@ -771,6 +856,11 @@ end
 
 controllerSection:AddToggle("Enable Bomb Jump Keybinds", function(bool)
     bombJumpEnabled = bool
+    if bool then
+        startHandleWatcher()
+    else
+        stopHandleWatcher()
+    end
 end)
 
 controllerSection:AddToggle("Auto Get Bomb", function(bool)
@@ -1680,4 +1770,5 @@ RootNicolas:GiveTask(function()
     restoreChatColors()
     emoteKeybindsEnabled = false
     stopAutoGetBomb()
+    stopHandleWatcher()
 end)
