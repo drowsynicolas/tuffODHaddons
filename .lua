@@ -8,6 +8,7 @@
 -- Tool Tint
 -- Custom Chat
 -- Emotes
+-- Coin Misc
 
 local table_insert = table.insert
 local nicolas = {}
@@ -1255,7 +1256,7 @@ local function startAutoPerk()
 end
 
 local function stopAutoPerk()
-    if autoPerkMapConn then
+    if        autoPerkMapConn then
         autoPerkMapConn:Disconnect()
         autoPerkMapConn = nil
     end
@@ -1313,7 +1314,7 @@ local function applyToolTint(tool)
                 mesh.VertexColor = Vector3.new(toolTintColor.R, toolTintColor.G, toolTintColor.B)
                 didVertexColor = true
             end
-        end
+ end
     end
 
     local highlight = tool:FindFirstChild("ToolTint")
@@ -1663,7 +1664,7 @@ local function playEmote(emoteName)
 end
 
 emotesSection:AddToggle("Emote keybinds", function(bool)
-    emoteKeybindsEnabled = bool
+    emotesKeybindsEnabled = bool
 end)
 
 emotesSection:AddKeybind("Sit", "null", function()
@@ -1688,6 +1689,301 @@ end)
 
 emotesSection:AddKeybind("Headless", "null", function()
     playEmote("headless")
+end)
+
+local coinSection = myTab:AddSection("Coin Misc", "random coin scripts")
+coinSection:AddParagraph("Additional Info", "just coin stuff idk ;-;\n\nCredits: @drowsynicolas")
+
+local coinFeatures = {
+    master = false,
+    allCoins = false,
+    nearestOnly = false,
+    customColor = false,
+}
+
+local COIN_SCAN_INTERVAL = 1
+local COIN_REFRESH_INTERVAL = 0.5
+
+local coinContainers = {}
+local coinContainerSet = {}
+local coinLastContainerScan = -math.huge
+local coinHighlights = {}
+local coinOriginalColors = {}
+local coinCustomColor = Color3.fromRGB(255, 255, 255)
+local coinLoopThread = nil
+local coinDescAddedConn = nil
+
+local function coinIsCoin(part)
+    return part.Name == "Coin_Server" and part:IsA("BasePart")
+end
+
+local function coinScanContainers()
+    if tick() - coinLastContainerScan < COIN_SCAN_INTERVAL then return end
+    coinLastContainerScan = tick()
+
+    local newList = {}
+    local newSet = {}
+    for _, top in ipairs(workspace:GetChildren()) do
+        local container = top:FindFirstChild("CoinContainer")
+        if container then
+            table.insert(newList, container)
+            newSet[container] = true
+        else
+            for _, child in ipairs(top:GetChildren()) do
+                local c2 = child:FindFirstChild("CoinContainer")
+                if c2 then
+                    table.insert(newList, c2)
+                    newSet[c2] = true
+                end
+            end
+        end
+    end
+    coinContainers = newList
+    coinContainerSet = newSet
+end
+
+local function coinGetVisual(coin)
+    local visual = coin:FindFirstChild("CoinVisual")
+    if visual and visual:IsA("MeshPart") then
+        return visual
+    end
+    return nil
+end
+
+local function coinApplyColor(coin)
+    local visual = coinGetVisual(coin)
+    if not visual then return end
+
+    if coinOriginalColors[coin] == nil then
+        coinOriginalColors[coin] = visual.Color
+    end
+    if visual.Color ~= coinCustomColor then
+        visual.Color = coinCustomColor
+    end
+
+    local hl = coinHighlights[coin]
+    if hl and hl.Parent then
+        hl.FillColor = coinCustomColor
+        hl.OutlineColor = Color3.new(
+            math.max(coinCustomColor.R - 0.25, 0),
+            math.max(coinCustomColor.G - 0.25, 0),
+            math.max(coinCustomColor.B - 0.25, 0)
+        )
+    end
+end
+
+local function coinRestoreColor(coin)
+    local original = coinOriginalColors[coin]
+    if original == nil then return end
+
+    local visual = coinGetVisual(coin)
+    if visual and visual.Color ~= original then
+        visual.Color = original
+    end
+
+    local hl = coinHighlights[coin]
+    if hl and hl.Parent then
+        hl.FillColor = original
+        hl.OutlineColor = Color3.new(
+            math.max(original.R - 0.25, 0),
+            math.max(original.G - 0.25, 0),
+            math.max(original.B - 0.25, 0)
+        )
+    end
+
+    coinOriginalColors[coin] = nil
+end
+
+local function coinAddHighlight(coin)
+    if coinHighlights[coin] then return end
+    local visual = coinGetVisual(coin) or coin
+
+    local fillColor = visual.Color
+    local outlineColor = Color3.new(
+        math.max(fillColor.R - 0.25, 0),
+        math.max(fillColor.G - 0.25, 0),
+        math.max(fillColor.B - 0.25, 0)
+    )
+
+    local hl = Instance.new("Highlight")
+    hl.Name = "CoinESP"
+    hl.Adornee = visual
+    hl.FillColor = fillColor
+    hl.FillTransparency = 0.4
+    hl.OutlineColor = outlineColor
+    hl.OutlineTransparency = 0
+    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    hl.Parent = visual
+
+    coinHighlights[coin] = hl
+end
+
+local function coinRemoveHighlight(coin)
+    local hl = coinHighlights[coin]
+    if hl then
+        if hl.Parent then hl:Destroy() end
+        coinHighlights[coin] = nil
+    end
+end
+
+local function coinClearHighlights()
+    for _, hl in pairs(coinHighlights) do
+        if hl.Parent then hl:Destroy() end
+    end
+    table.clear(coinHighlights)
+end
+
+local function coinFindNearest(liveCoins)
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+
+    local pos = hrp.Position
+    local nearest = nil
+    local nearestDist = math.huge
+    for coin in pairs(liveCoins) do
+        local d = (coin.Position - pos).Magnitude
+        if d < nearestDist then
+            nearestDist = d
+            nearest = coin
+        end
+    end
+    return nearest
+end
+
+local function coinEspTick()
+    coinScanContainers()
+
+    local liveCoins = {}
+    for _, container in ipairs(coinContainers) do
+        for _, child in ipairs(container:GetChildren()) do
+            if coinIsCoin(child) and child.Parent then
+                liveCoins[child] = true
+            end
+        end
+    end
+
+    local targetCoins = {}
+    if coinFeatures.allCoins then
+        targetCoins = liveCoins
+    elseif coinFeatures.nearestOnly then
+        local nearest = coinFindNearest(liveCoins)
+        if nearest then
+            targetCoins[nearest] = true
+        end
+    end
+
+    for coin in pairs(targetCoins) do
+        if not coinHighlights[coin] then
+            coinAddHighlight(coin)
+        end
+    end
+
+    for coin in pairs(coinHighlights) do
+        if not targetCoins[coin] then
+            coinRemoveHighlight(coin)
+        end
+    end
+
+    if coinFeatures.customColor then
+        for coin in pairs(liveCoins) do
+            coinApplyColor(coin)
+        end
+    end
+end
+
+local function coinStartLoop()
+    if coinLoopThread then return end
+    coinLoopThread = task.spawn(function()
+        while coinFeatures.master do
+            coinEspTick()
+            task.wait(COIN_REFRESH_INTERVAL)
+        end
+        coinLoopThread = nil
+    end)
+end
+
+local function coinStopLoop()
+    coinClearHighlights()
+end
+
+local function coinApplyColorToAll()
+    coinScanContainers()
+    for _, container in ipairs(coinContainers) do
+        for _, child in ipairs(container:GetChildren()) do
+            if coinIsCoin(child) then
+                coinApplyColor(child)
+            end
+        end
+    end
+end
+
+local function coinRestoreAllColors()
+    for coin in pairs(coinOriginalColors) do
+        if coin.Parent then
+            coinRestoreColor(coin)
+        else
+            coinOriginalColors[coin] = nil
+        end
+    end
+end
+
+local function coinOnDescendantAdded(desc)
+    if coinFeatures.customColor and coinIsCoin(desc) then
+        task.spawn(function()
+            local visual = desc:FindFirstChild("CoinVisual") or desc:WaitForChild("CoinVisual", 5)
+            if visual and coinFeatures.customColor and desc.Parent then
+                coinApplyColor(desc)
+            end
+        end)
+    end
+end
+
+local function coinStartDescHook()
+    if coinDescAddedConn then return end
+    coinDescAddedConn = workspace.DescendantAdded:Connect(coinOnDescendantAdded)
+end
+
+local function coinStopDescHook()
+    if coinDescAddedConn then
+        coinDescAddedConn:Disconnect()
+        coinDescAddedConn = nil
+    end
+end
+
+coinSection:AddToggle("Coin ESP", function(bool)
+    coinFeatures.master = bool
+    if bool then
+        coinStartLoop()
+    else
+        coinStopLoop()
+    end
+end)
+
+coinSection:AddToggle("ESP All Coins", function(bool)
+    coinFeatures.allCoins = bool
+end)
+
+coinSection:AddToggle("ESP Nearest Coin Only", function(bool)
+    coinFeatures.nearestOnly = bool
+end)
+
+coinSection:AddToggle("Custom Coin Color", function(bool)
+    coinFeatures.customColor = bool
+    if bool then
+        coinStartDescHook()
+        coinApplyColorToAll()
+    else
+        coinStopDescHook()
+        coinRestoreAllColors()
+    end
+end)
+
+coinSection:AddColorpicker("Coin Color", Color3.fromRGB(255, 255, 255), function(color)
+    coinCustomColor = color
+    if coinFeatures.customColor then
+        coinApplyColorToAll()
+    end
 end)
 
 RootNicolas:GiveTask(function()
@@ -1719,4 +2015,9 @@ RootNicolas:GiveTask(function()
     restoreChatColors()
     emoteKeybindsEnabled = false
     stopAutoGetBomb()
+    coinFeatures.master = false
+    coinFeatures.customColor = false
+    coinStopLoop()
+    coinStopDescHook()
+    coinRestoreAllColors()
 end)
