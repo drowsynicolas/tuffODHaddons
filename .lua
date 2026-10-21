@@ -8,6 +8,7 @@
 -- Tool Tint
 -- Custom Chat
 -- Emotes
+-- Coin Misc
 -- Event
 -- Personal
 
@@ -1692,14 +1693,240 @@ emotesSection:AddKeybind("Headless", "null", function()
     playEmote("headless")
 end)
 
+local coinSection = myTab:AddSection("Coin Misc", "random coin scripts")
+coinSection:AddParagraph("Additional Info", "just coin stuff idk ;-;\n\nCredits: @drowsynicolas")
+
+local coinFeatures = { master = false, allCoins = false, nearestOnly = false, customColor = false }
+local COIN_SCAN_INTERVAL = 1
+local COIN_REFRESH_INTERVAL = 0.5
+
+local coinContainers = {}
+local coinLastContainerScan = -math.huge
+local coinHighlights = {}
+local coinOriginalColors = {}
+local coinCustomColor = Color3.fromRGB(255, 255, 255)
+local coinLoopThread = nil
+local coinDescAddedConn = nil
+
+local function coinIsCoin(part) return part.Name == "Coin_Server" and part:IsA("BasePart") end
+
+local function coinScanContainers()
+    if tick() - coinLastContainerScan < COIN_SCAN_INTERVAL then return end
+    coinLastContainerScan = tick()
+    local newList = {}
+    for _, top in ipairs(workspace:GetChildren()) do
+        local container = top:FindFirstChild("CoinContainer")
+        if container then table.insert(newList, container) else
+            for _, child in ipairs(top:GetChildren()) do
+                local c2 = child:FindFirstChild("CoinContainer")
+                if c2 then table.insert(newList, c2) end
+            end
+        end
+    end
+    coinContainers = newList
+end
+
+local function coinGetVisual(coin)
+    local visual = coin:FindFirstChild("CoinVisual")
+    if visual and visual:IsA("MeshPart") then return visual end
+    return nil
+end
+
+local function coinApplyColor(coin)
+    local visual = coinGetVisual(coin)
+    if not visual then return end
+    if coinOriginalColors[coin] == nil then coinOriginalColors[coin] = visual.Color end
+    if visual.Color ~= coinCustomColor then visual.Color = coinCustomColor end
+
+    local hl = coinHighlights[coin]
+    if hl and hl.Parent then
+        hl.FillColor = coinCustomColor
+        hl.OutlineColor = Color3.new(math.max(coinCustomColor.R - 0.25, 0), math.max(coinCustomColor.G - 0.25, 0), math.max(coinCustomColor.B - 0.25, 0))
+    end
+end
+
+local function coinRestoreColor(coin)
+    local original = coinOriginalColors[coin]
+    if original == nil then return end
+    local visual = coinGetVisual(coin)
+    if visual and visual.Color ~= original then visual.Color = original end
+    
+    local hl = coinHighlights[coin]
+    if hl and hl.Parent then
+        hl.FillColor = original
+        hl.OutlineColor = Color3.new(math.max(original.R - 0.25, 0), math.max(original.G - 0.25, 0), math.max(original.B - 0.25, 0))
+    end
+    coinOriginalColors[coin] = nil
+end
+
+local function coinAddHighlight(coin)
+    if coinHighlights[coin] then return end
+    local visual = coinGetVisual(coin) or coin
+    local fillColor = visual.Color
+    local outlineColor = Color3.new(math.max(fillColor.R - 0.25, 0), math.max(fillColor.G - 0.25, 0), math.max(fillColor.B - 0.25, 0))
+
+    local hl = Instance.new("Highlight")
+    hl.Name = "CoinESP"
+    hl.Adornee = visual
+    hl.FillColor = fillColor
+    hl.FillTransparency = 0.4
+    hl.OutlineColor = outlineColor
+    hl.OutlineTransparency = 0
+    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    hl.Parent = visual
+    coinHighlights[coin] = hl
+end
+
+local function coinRemoveHighlight(coin)
+    local hl = coinHighlights[coin]
+    if hl then if hl.Parent then hl:Destroy() end coinHighlights[coin] = nil end
+end
+
+local function coinClearHighlights()
+    for _, hl in pairs(coinHighlights) do if hl.Parent then hl:Destroy() end end
+    table.clear(coinHighlights)
+end
+
+local function coinFindNearest(liveCoins)
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+
+    local pos = hrp.Position
+    local nearest = nil
+    local nearestDist = math.huge
+    for coin in pairs(liveCoins) do
+        local d = (coin.Position - pos).Magnitude
+        if d < nearestDist then nearestDist = d; nearest = coin end
+    end
+    return nearest
+end
+
+local function coinEspTick()
+    coinScanContainers()
+    local liveCoins = {}
+    for _, container in ipairs(coinContainers) do
+        for _, child in ipairs(container:GetChildren()) do
+            if coinIsCoin(child) and child.Parent then liveCoins[child] = true end
+        end
+    end
+
+    local targetCoins = {}
+    if coinFeatures.allCoins then targetCoins = liveCoins elseif coinFeatures.nearestOnly then
+        local nearest = coinFindNearest(liveCoins)
+        if nearest then targetCoins[nearest] = true end
+    end
+
+    for coin in pairs(targetCoins) do if not coinHighlights[coin] then coinAddHighlight(coin) end end
+    for coin in pairs(coinHighlights) do if not targetCoins[coin] then coinRemoveHighlight(coin) end end
+    if coinFeatures.customColor then for coin in pairs(liveCoins) do coinApplyColor(coin) end end
+end
+
+local function coinStartLoop()
+    if coinLoopThread then return end
+    coinLoopThread = task.spawn(function()
+        while coinFeatures.master do
+            coinEspTick()
+            task.wait(COIN_REFRESH_INTERVAL)
+        end
+        coinLoopThread = nil
+    end)
+end
+
+local function coinStopLoop() coinClearHighlights() end
+
+local function coinApplyColorToAll()
+    coinScanContainers()
+    for _, container in ipairs(coinContainers) do
+        for _, child in ipairs(container:GetChildren()) do
+            if coinIsCoin(child) then coinApplyColor(child) end
+        end
+    end
+end
+
+local function coinRestoreAllColors()
+    for coin in pairs(coinOriginalColors) do
+        if coin.Parent then coinRestoreColor(coin) else coinOriginalColors[coin] = nil end
+    end
+end
+
+local function coinOnDescendantAdded(desc)
+    if coinFeatures.customColor and coinIsCoin(desc) then
+        task.spawn(function()
+            local visual = desc:FindFirstChild("CoinVisual") or desc:WaitForChild("CoinVisual", 5)
+            if visual and coinFeatures.customColor and desc.Parent then coinApplyColor(desc) end
+        end)
+    end
+end
+
+local function coinStartDescHook()
+    if coinDescAddedConn then return end
+    coinDescAddedConn = workspace.DescendantAdded:Connect(coinOnDescendantAdded)
+end
+
+local function coinStopDescHook()
+    if coinDescAddedConn then coinDescAddedConn:Disconnect() coinDescAddedConn = nil end
+end
+
+coinSection:AddToggle("Coin ESP", function(bool)
+    coinFeatures.master = bool
+    if bool then coinStartLoop() else coinStopLoop() end
+end)
+
+coinSection:AddToggle("ESP All Coins", function(bool) coinFeatures.allCoins = bool end)
+coinSection:AddToggle("ESP Nearest Coin Only", function(bool) coinFeatures.nearestOnly = bool end)
+
+coinSection:AddToggle("Custom Coin Color", function(bool)
+    coinFeatures.customColor = bool
+    if bool then coinStartDescHook(); coinApplyColorToAll() else coinStopDescHook(); coinRestoreAllColors() end
+end)
+
+coinSection:AddColorpicker("Coin Color", Color3.fromRGB(255, 255, 255), function(color)
+    coinCustomColor = color
+    if coinFeatures.customColor then coinApplyColorToAll() end
+end)
+
+coinSection:AddParagraph("Cap FPS", "you may be wondering \"why the hell is this in coin misc?\" well to answer your question it's for auto farming. capping your fps to like 30 prevents your device from overheating and exploding and causing a house fire. please note anything 20 and below makes flinging less efficient.")
+
+local fpsCapperEnabled = false
+local fpsCapValue = nil
+
+local function fpsCapIsValid(n) return typeof(n) == "number" and n >= 1 and n <= 999 end
+local function fpsCapApply(n)
+    if not fpsCapIsValid(n) then return false end
+    if not setfpscap then shared.Notify("FPS Capper: executor doesn't support setfpscap", 3) return false end
+    local ok = pcall(setfpscap, n)
+    if not ok then shared.Notify("FPS Capper: setfpscap failed", 3) return false end
+    return true
+end
+
+local function fpsCapRestore()
+    if not setfpscap then return end
+    pcall(setfpscap, 999)
+end
+
+coinSection:AddToggle("FPS Capper", function(bool)
+    fpsCapperEnabled = bool
+    if bool then if fpsCapValue and fpsCapIsValid(fpsCapValue) then fpsCapApply(fpsCapValue) end
+    else fpsCapRestore() end
+end)
+
+coinSection:AddTextBox("FPS Cap", function(text)
+    local n = tonumber(text)
+    if n then fpsCapValue = n else fpsCapValue = nil end
+end)
+
+coinSection:AddButton("Apply FPS", function()
+    if not fpsCapperEnabled then return end
+    if not fpsCapValue then shared.Notify("FPS Capper: enter a valid number first", 3) return end
+    if not fpsCapIsValid(fpsCapValue) then shared.Notify("FPS Capper: value must be 1-999", 3) return end
+    fpsCapApply(fpsCapValue)
+end)
+
 local eventSection = myTab:AddSection("Event", "For MM2 Events!")
 eventSection:AddParagraph("Additional Info", "counter for your current event currency and how much you need until you get the final reward tier\n\nCredits: @drowsynicolas")
 
-local eventFeatures = {
-    showCurrent = false,
-    showUntil = false,
-}
-
+local eventFeatures = { showCurrent = false, showUntil = false }
 local EVENT_TARGET = 100000
 
 local eventGui = nil
@@ -1713,88 +1940,16 @@ local function eventFormatNumber(num)
     return tostring(math.floor(num)):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
 end
 
-local function eventCreateGui()
-    if eventGui then return end
-
-    eventGui = Instance.new("ScreenGui")
-    eventGui.Name = "gatito"
-    eventGui.ResetOnSpawn = false
-
-    local parent
-    if gethui then
-        parent = gethui()
-    elseif syn and syn.protect_gui then
-        parent = game:GetService("CoreGui")
-        syn.protect_gui(eventGui)
-    else
-        parent = LocalPlayer:WaitForChild("PlayerGui")
-    end
-    eventGui.Parent = parent
-
-    eventCurrentLabel = Instance.new("TextLabel")
-    eventCurrentLabel.Size = UDim2.new(0, 185, 0, 30)
-    eventCurrentLabel.Position = UDim2.new(0.5, 200, 0.5, -15)
-    eventCurrentLabel.AnchorPoint = Vector2.new(0, 0)
-    eventCurrentLabel.BackgroundTransparency = 1
-    eventCurrentLabel.TextColor3 = Color3.fromRGB(255, 165, 0)
-    eventCurrentLabel.Font = Enum.Font.SciFi
-    eventCurrentLabel.TextSize = 24
-    eventCurrentLabel.Text = "?"
-    eventCurrentLabel.Visible = false
-    eventCurrentLabel.Parent = eventGui
-
-    eventUntilLabel = Instance.new("TextLabel")
-    eventUntilLabel.Size = UDim2.new(0, 185, 0, 30)
-    eventUntilLabel.Position = UDim2.new(0.5, 200, 0.5, 5)
-    eventUntilLabel.AnchorPoint = Vector2.new(0, 0)
-    eventUntilLabel.BackgroundTransparency = 1
-    eventUntilLabel.TextColor3 = Color3.fromRGB(165, 60, 210)
-    eventUntilLabel.Font = Enum.Font.SciFi
-    eventUntilLabel.TextSize = 23
-    eventUntilLabel.Text = "?"
-    eventUntilLabel.Visible = false
-    eventUntilLabel.Parent = eventGui
-end
-
-local function eventDestroyGui()
-    if eventTextConn then
-        eventTextConn:Disconnect()
-        eventTextConn = nil
-    end
-    if eventGui then
-        eventGui:Destroy()
-        eventGui = nil
-    end
-    eventCurrentLabel = nil
-    eventUntilLabel = nil
-    eventCandyLabel = nil
-end
-
 local function eventTryFindCandyLabel()
-    local pg = LocalPlayer:FindFirstChild("PlayerGui")
-    if not pg then return nil end
-    local cp = pg:FindFirstChild("CrossPlatform")
-    if not cp then return nil end
-    local hw = cp:FindFirstChild("Halloween2026")
-    if not hw then return nil end
-    local me = hw:FindFirstChild("MainEvent")
-    if not me then return nil end
-    local main = me:FindFirstChild("Main")
-    if not main then return nil end
-    local bp = main:FindFirstChild("BattlePass")
-    if not bp then return nil end
-    local title = bp:FindFirstChild("Title")
-    if not title then return nil end
-    local tokens = title:FindFirstChild("Tokens")
-    if not tokens then return nil end
-    local container = tokens:FindFirstChild("Container")
-    if not container then return nil end
-    return container:FindFirstChild("TextLabel")
+    local ok, res = pcall(function()
+        return LocalPlayer.PlayerGui.CrossPlatform.Halloween2026.MainEvent.Main.BattlePass.Title.Tokens.Container.TextLabel
+    end)
+    if ok then return res end
+    return nil
 end
 
 local function eventUpdateLabels()
     if not eventCurrentLabel or not eventUntilLabel then return end
-
     if not eventCandyLabel or not eventCandyLabel.Parent then
         eventCandyLabel = eventTryFindCandyLabel()
     end
@@ -1802,7 +1957,6 @@ local function eventUpdateLabels()
     if eventCandyLabel then
         local raw = eventCandyLabel.Text
         eventCurrentLabel.Text = raw
-
         local digits = raw:gsub("[^%d]", "")
         local candy = tonumber(digits)
         if candy then
@@ -1822,28 +1976,65 @@ local function eventUpdateLabels()
 end
 
 local function eventHookCandyLabel()
-    if eventTextConn then
-        eventTextConn:Disconnect()
-        eventTextConn = nil
-    end
-
+    if eventTextConn then eventTextConn:Disconnect() eventTextConn = nil end
     eventCandyLabel = eventTryFindCandyLabel()
     if eventCandyLabel then
         eventTextConn = eventCandyLabel:GetPropertyChangedSignal("Text"):Connect(eventUpdateLabels)
         eventUpdateLabels()
     else
-        eventCurrentLabel.Text = "?"
-        eventUntilLabel.Text = "?"
+        if eventCurrentLabel then eventCurrentLabel.Text = "?" end
+        if eventUntilLabel then eventUntilLabel.Text = "?" end
     end
+end
+
+local function eventCreateGui()
+    if eventGui then return end
+
+    eventGui = Instance.new("ScreenGui")
+    eventGui.Name = "gatito"
+    eventGui.ResetOnSpawn = false
+    eventGui.IgnoreGuiInset = true
+    eventGui.DisplayOrder = 999
+    eventGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+    eventCurrentLabel = Instance.new("TextLabel")
+    eventCurrentLabel.Size = UDim2.new(0, 185, 0, 30)
+    eventCurrentLabel.Position = UDim2.new(0.5, 200, 0.5, -15)
+    eventCurrentLabel.BackgroundTransparency = 1
+    eventCurrentLabel.TextColor3 = Color3.fromRGB(255, 165, 0)
+    eventCurrentLabel.Font = Enum.Font.SciFi
+    eventCurrentLabel.TextSize = 24
+    eventCurrentLabel.Text = "?"
+    eventCurrentLabel.Visible = false
+    eventCurrentLabel.Parent = eventGui
+
+    eventUntilLabel = Instance.new("TextLabel")
+    eventUntilLabel.Size = UDim2.new(0, 185, 0, 30)
+    eventUntilLabel.Position = UDim2.new(0.5, 200, 0.5, 5)
+    eventUntilLabel.BackgroundTransparency = 1
+    eventUntilLabel.TextColor3 = Color3.fromRGB(165, 60, 210)
+    eventUntilLabel.Font = Enum.Font.SciFi
+    eventUntilLabel.TextSize = 23
+    eventUntilLabel.Text = "?"
+    eventUntilLabel.Visible = false
+    eventUntilLabel.Parent = eventGui
+    
+    eventHookCandyLabel()
+end
+
+local function eventDestroyGui()
+    if eventTextConn then eventTextConn:Disconnect() eventTextConn = nil end
+    if eventGui then eventGui:Destroy() eventGui = nil end
+    eventCurrentLabel = nil
+    eventUntilLabel = nil
+    eventCandyLabel = nil
 end
 
 local function eventStartWatcher()
     if eventLabelWaitThread then return end
     eventLabelWaitThread = task.spawn(function()
         while (eventFeatures.showCurrent or eventFeatures.showUntil) do
-            if not eventCandyLabel or not eventCandyLabel.Parent then
-                eventHookCandyLabel()
-            end
+            if not eventCandyLabel or not eventCandyLabel.Parent then eventHookCandyLabel() end
             task.wait(1)
         end
         eventLabelWaitThread = nil
@@ -1851,29 +2042,25 @@ local function eventStartWatcher()
 end
 
 local function eventRefreshVisibility()
-    local any = eventFeatures.showCurrent or eventFeatures.showUntil
-    if not any then
+    if not (eventFeatures.showCurrent or eventFeatures.showUntil) then
         eventDestroyGui()
         return
     end
 
     eventCreateGui()
-    eventCurrentLabel.Visible = eventFeatures.showCurrent
-    eventUntilLabel.Visible = eventFeatures.showUntil
-
-    if eventFeatures.showCurrent then
+    if eventCurrentLabel then
+        eventCurrentLabel.Visible = eventFeatures.showCurrent
         eventCurrentLabel.Position = UDim2.new(0.5, 200, 0.5, -15)
     end
-    if eventFeatures.showUntil then
+    if eventUntilLabel then
+        eventUntilLabel.Visible = eventFeatures.showUntil
         if eventFeatures.showCurrent then
             eventUntilLabel.Position = UDim2.new(0.5, 200, 0.5, 5)
         else
             eventUntilLabel.Position = UDim2.new(0.5, 200, 0.5, -15)
         end
     end
-
     eventStartWatcher()
-    eventHookCandyLabel()
 end
 
 eventSection:AddToggle("Show Current Candies", function(bool)
@@ -1897,116 +2084,82 @@ local personalFeatures = {
 local infJumpBoost = 40
 local infJumpFallMul = 1.0
 
-local infJumpConn = nil
-local infJumpHold = false
-local infJumpActionName = "PersonalInfJump"
+local infJumpHeartbeatConn = nil
+local infJumpRequestConn = nil
+local infJumpHeld = false
 
-local function infJumpGetPieces()
+local function infJumpHeartbeat()
+    if not personalFeatures.infJump then return end
     local char = LocalPlayer.Character
-    if not char then return nil, nil end
+    if not char then return end
+
     local humanoid = char:FindFirstChildOfClass("Humanoid")
     local root = char:FindFirstChild("HumanoidRootPart")
-    return humanoid, root
-end
-
-local function infJumpLoop()
-    local humanoid, root = infJumpGetPieces()
     if not humanoid or not root then return end
 
     local vel = root.AssemblyLinearVelocity
 
-    if infJumpHold then
+    if infJumpHeld then
         root.AssemblyLinearVelocity = Vector3.new(vel.X, infJumpBoost, vel.Z)
     end
-
     if vel.Y < 0 and infJumpFallMul ~= 1.0 then
         root.AssemblyLinearVelocity = Vector3.new(vel.X, vel.Y * infJumpFallMul, vel.Z)
+    end
+    if not humanoid.Jump then
+        infJumpHeld = false
     end
 end
 
 local function infJumpStart()
-    if infJumpConn then return end
+    if infJumpHeartbeatConn then return end
+    local uis = game:GetService("UserInputService")
 
-    local cas = game:GetService("ContextActionService")
-    cas:BindAction(infJumpActionName, function(_, state)
-        if state == Enum.UserInputState.Begin then
-            infJumpHold = true
-        elseif state == Enum.UserInputState.End or state == Enum.UserInputState.Cancel then
-            infJumpHold = false
+    infJumpRequestConn = uis.JumpRequest:Connect(function()
+        if personalFeatures.infJump then
+            infJumpHeld = true
         end
-        return Enum.ContextActionResult.Pass
-    end, false, Enum.KeyCode.Space, Enum.KeyCode.ButtonA)
-
-    infJumpConn = RunService.Heartbeat:Connect(infJumpLoop)
+    end)
+    infJumpHeartbeatConn = RunService.Heartbeat:Connect(infJumpHeartbeat)
 end
 
 local function infJumpStop()
-    if infJumpConn then
-        infJumpConn:Disconnect()
-        infJumpConn = nil
-    end
-    infJumpHold = false
-    local cas = game:GetService("ContextActionService")
-    pcall(function()
-        cas:UnbindAction(infJumpActionName)
-    end)
+    if infJumpHeartbeatConn then infJumpHeartbeatConn:Disconnect() infJumpHeartbeatConn = nil end
+    if infJumpRequestConn then infJumpRequestConn:Disconnect() infJumpRequestConn = nil end
+    infJumpHeld = false
 end
 
 local autoBroomConn = nil
-
 local function autoBroomOnCharacter(character)
     task.wait(2)
+    if LocalPlayer.Character ~= character or not personalFeatures.autoBroom then return end
 
-    if LocalPlayer.Character ~= character then
-        return
-    end
-    if not personalFeatures.autoBroom then
-        return
-    end
-
-    local remote = ReplicatedStorage:FindFirstChild("Remotes")
-        and ReplicatedStorage.Remotes:FindFirstChild("Extras")
-        and ReplicatedStorage.Remotes.Extras:FindFirstChild("ReplicateToy")
+    local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("Extras") and ReplicatedStorage.Remotes.Extras:FindFirstChild("ReplicateToy")
     if not remote then return end
 
-    pcall(function()
-        remote:InvokeServer("Broom26")
-    end)
+    pcall(function() remote:InvokeServer("Broom26") end)
 
     local backpack = LocalPlayer:FindFirstChild("Backpack")
-    local tool = character:FindFirstChild("Broom26")
-        or (backpack and backpack:FindFirstChild("Broom26"))
+    local tool = character:FindFirstChild("Broom26") or (backpack and backpack:FindFirstChild("Broom26"))
 
     if tool and tool:IsA("Tool") then
         tool.Parent = character
-        pcall(function()
-            tool:Activate()
-        end)
+        pcall(function() tool:Activate() end)
     end
 end
 
 local function autoBroomStart()
     if autoBroomConn then return end
     autoBroomConn = LocalPlayer.CharacterAdded:Connect(autoBroomOnCharacter)
-    if LocalPlayer.Character then
-        task.spawn(autoBroomOnCharacter, LocalPlayer.Character)
-    end
+    if LocalPlayer.Character then task.spawn(autoBroomOnCharacter, LocalPlayer.Character) end
 end
 
 local function autoBroomStop()
-    if autoBroomConn then
-        autoBroomConn:Disconnect()
-        autoBroomConn = nil
-    end
+    if autoBroomConn then autoBroomConn:Disconnect() autoBroomConn = nil end
 end
 
 personalSection:AddToggle("Inf Jump", function(bool)
     personalFeatures.infJump = bool
-    if bool then
-        infJumpStart()
-    else
-        infJumpStop()
-    end
+    if bool then infJumpStart() else infJumpStop() end
 end)
 
 personalSection:AddSlider("Jump Boost", 10, 100, 40, function(value)
@@ -2019,11 +2172,7 @@ end)
 
 personalSection:AddToggle("Auto Broom", function(bool)
     personalFeatures.autoBroom = bool
-    if bool then
-        autoBroomStart()
-    else
-        autoBroomStop()
-    end
+    if bool then autoBroomStart() else autoBroomStop() end
 end)
 
 RootNicolas:GiveTask(function()
@@ -2055,6 +2204,13 @@ RootNicolas:GiveTask(function()
     restoreChatColors()
     emoteKeybindsEnabled = false
     stopAutoGetBomb()
+    coinFeatures.master = false
+    coinFeatures.customColor = false
+    coinStopLoop()
+    coinStopDescHook()
+    coinRestoreAllColors()
+    fpsCapperEnabled = false
+    fpsCapRestore()
     eventFeatures.showCurrent = false
     eventFeatures.showUntil = false
     eventDestroyGui()
