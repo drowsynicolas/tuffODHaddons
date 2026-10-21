@@ -612,7 +612,6 @@ end)
 local bombJumpParagraph = controllerSection:AddParagraph("Bomb Jump", "All credits goes to @lzzzx")
 
 local bombJumpEnabled = false
-local bombJumpCooldown = false
 local bombJumpDebounce = false
 local autoGetBomb = false
 local autoGetBombCharConn = nil
@@ -653,27 +652,72 @@ local function stopAutoGetBomb()
     end
 end
 
+local bombCooldowns = {
+    FakeBomb = 0,
+    GoldBomb = 0,
+}
+
 LocalPlayer.CharacterAdded:Connect(function()
-    bombJumpCooldown = false
+    bombCooldowns = {
+        FakeBomb = 0,
+        GoldBomb = 0,
+    }
     bombJumpDebounce = false
 end)
 
-local function getBombFromCharacter()
+local function isBombReady(bombName)
+    local readyAt = bombCooldowns[bombName]
+    if not readyAt then return true end
+    return tick() >= readyAt
+end
+
+local function getBombRemaining(bombName)
+    local readyAt = bombCooldowns[bombName]
+    if not readyAt then return 0 end
+    return math.max(0, readyAt - tick())
+end
+
+local function getBestAvailableBomb()
     local char = LocalPlayer.Character
     if not char then return nil, nil end
 
-    local found = {}
+    local backpack = LocalPlayer:FindFirstChild("Backpack")
+
+    local candidates = {}
     for _, bombType in ipairs(BOMB_TYPES) do
-        local bomb = char:FindFirstChild(bombType.name)
-        if bomb then
-            table.insert(found, {tool = bomb, config = bombType})
+        local found = char:FindFirstChild(bombType.name)
+            or (backpack and backpack:FindFirstChild(bombType.name))
+        if found and found:IsA("Tool") then
+            table.insert(candidates, {tool = found, config = bombType})
         end
     end
 
-    if #found == 1 then
-        return found[1].tool, found[1].config
+    if #candidates == 0 then
+        return nil, nil
     end
-    return nil, nil
+
+    local ready = {}
+    for _, c in ipairs(candidates) do
+        if isBombReady(c.config.name) then
+            table.insert(ready, c)
+        end
+    end
+
+    if #ready == 0 then
+        table.sort(candidates, function(a, b)
+            return getBombRemaining(a.config.name) < getBombRemaining(b.config.name)
+        end)
+        return nil, candidates[1].config
+    end
+
+    if #ready == 1 then
+        return ready[1].tool, ready[1].config
+    end
+
+    table.sort(ready, function(a, b)
+        return a.config.cooldown < b.config.cooldown
+    end)
+    return ready[1].tool, ready[1].config
 end
 
 local function bombJumpIsInAir()
@@ -689,149 +733,49 @@ local function bombJumpIsInAir()
         or state == Enum.HumanoidStateType.Freefall
 end
 
-local function startBombJumpCooldown(duration)
-    bombJumpCooldown = true
-    task.spawn(function()
-        task.wait(duration)
-        bombJumpCooldown = false
-    end)
-end
-
--- ─── Bomb Handle Tracker ───────────────────────────────────────────────
--- Maintains an ordered list of bomb handles owned by LocalPlayer.
--- Newest is always last. Old handles are pruned automatically when they
--- leave the workspace (explode / despawn).
-local myHandles = {}
-local handleWatcherConn = nil
-local handleRemovedConns = {}
-
-local function isMyHandle(obj)
-    return obj.Name == "Handle"
-        and obj:IsA("BasePart")
-        and obj:FindFirstChild("creator")
-        and obj.creator.Value == LocalPlayer
-end
-
-local function untrackHandle(handle)
-    local conn = handleRemovedConns[handle]
-    if conn then
-        conn:Disconnect()
-        handleRemovedConns[handle] = nil
-    end
-    for i, h in ipairs(myHandles) do
-        if h == handle then
-            table.remove(myHandles, i)
-            break
-        end
-    end
-end
-
-local function trackHandle(handle)
-    for _, h in ipairs(myHandles) do
-        if h == handle then return end
-    end
-
-    table.insert(myHandles, handle)
-
-    local conn
-    conn = handle.AncestryChanged:Connect(function(_, parent)
-        if not parent then
-            untrackHandle(handle)
-        end
-    end)
-    handleRemovedConns[handle] = conn
-end
-
-local function startHandleWatcher()
-    stopHandleWatcher()
-
-    for _, obj in ipairs(workspace:GetChildren()) do
-        if isMyHandle(obj) then
-            trackHandle(obj)
-        end
-    end
-
-    handleWatcherConn = workspace.DescendantAdded:Connect(function(obj)
-        if isMyHandle(obj) then
-            trackHandle(obj)
-        end
-    end)
-end
-
-local function stopHandleWatcher()
-    if handleWatcherConn then
-        handleWatcherConn:Disconnect()
-        handleWatcherConn = nil
-    end
-    for _, conn in pairs(handleRemovedConns) do
-        conn:Disconnect()
-    end
-    handleRemovedConns = {}
-    myHandles = {}
-end
-
--- Returns the newest handle owned by LocalPlayer, or nil.
-local function getNewestHandle()
-    for i = #myHandles, 1, -1 do
-        local h = myHandles[i]
-        if h and h.Parent then
-            return h
-        end
-    end
-    return nil
-end
-
--- Polls for a handle for up to `timeout` seconds. Handles high-ping
--- replication delays gracefully.
-local function waitForNewestHandle(timeout)
-    timeout = timeout or 0.2
-    local deadline = tick() + timeout
-    while tick() < deadline do
-        local h = getNewestHandle()
-        if h then return h end
-        task.wait(0.02)
-    end
-    return nil
+local function startBombJumpCooldown(bombName, duration)
+    bombCooldowns[bombName] = tick() + duration
 end
 
 local function performBombJump()
     if not bombJumpEnabled then return end
-    if bombJumpCooldown or bombJumpDebounce then return end
+    if bombJumpDebounce then return end
     if not bombJumpIsInAir() then return end
 
-    local bomb, config = getBombFromCharacter()
-    if not bomb then return end
-
     local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local humanoid = char:FindFirstChild("Humanoid")
+    if not hrp or not humanoid then return end
+
+    local bomb, config = getBestAvailableBomb()
+    if not bomb then
+        return
+    end
+
+    local previousTool = char:FindFirstChildOfClass("Tool")
+
+    local bombAlreadyEquipped = (bomb.Parent == char)
+    if not bombAlreadyEquipped then
+        local backpack = LocalPlayer:FindFirstChild("Backpack")
+        if backpack and bomb.Parent == backpack then
+            pcall(function()
+                humanoid:EquipTool(bomb)
+            end)
+            task.wait(0.1)
+        end
+    end
 
     bombJumpDebounce = true
 
     local remote = bomb:FindFirstChild("Remote")
     if remote then
         pcall(function()
-            remote:FireServer(CFrame.new(hrp.Position), 50)
+            remote:FireServer(CFrame.new(hrp.Position - Vector3.new(0, 4, 0)), 50)
         end)
     end
 
     task.wait(0.05)
-
-    local handle = waitForNewestHandle(0.2)
-    if handle then
-        pcall(function()
-            handle:SetNetworkOwner(LocalPlayer)
-            handle.Anchored = true
-            handle.CFrame = CFrame.new(hrp.Position - Vector3.new(0, 3.5, 0))
-        end)
-
-        task.wait(0.35)
-
-        pcall(function()
-            handle.Anchored = false
-            handle:SetNetworkOwner(nil)
-        end)
-    end
 
     hrp.AssemblyLinearVelocity = Vector3.new(
         hrp.AssemblyLinearVelocity.X,
@@ -839,14 +783,24 @@ local function performBombJump()
         hrp.AssemblyLinearVelocity.Z
     )
 
-    local humanoid = char:FindFirstChild("Humanoid")
-    if humanoid then
-        pcall(function()
-            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-        end)
-    end
+    pcall(function()
+        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end)
 
-    startBombJumpCooldown(config.cooldown)
+    startBombJumpCooldown(config.name, config.cooldown)
+
+    task.spawn(function()
+        task.wait(0.15)
+        if previousTool and previousTool.Parent then
+            pcall(function()
+                humanoid:EquipTool(previousTool)
+            end)
+        else
+            pcall(function()
+                humanoid:UnequipTools()
+            end)
+        end
+    end)
 
     task.spawn(function()
         task.wait(0.5)
@@ -856,11 +810,6 @@ end
 
 controllerSection:AddToggle("Enable Bomb Jump Keybinds", function(bool)
     bombJumpEnabled = bool
-    if bool then
-        startHandleWatcher()
-    else
-        stopHandleWatcher()
-    end
 end)
 
 controllerSection:AddToggle("Auto Get Bomb", function(bool)
@@ -1770,5 +1719,4 @@ RootNicolas:GiveTask(function()
     restoreChatColors()
     emoteKeybindsEnabled = false
     stopAutoGetBomb()
-    stopHandleWatcher()
 end)
