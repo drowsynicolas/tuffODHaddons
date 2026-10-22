@@ -1886,43 +1886,6 @@ coinSection:AddColorpicker("Coin Color", Color3.fromRGB(255, 255, 255), function
     if coinFeatures.customColor then coinApplyColorToAll() end
 end)
 
-coinSection:AddParagraph("Cap FPS", "you may be wondering \"why the hell is this in coin misc?\" well to answer your question it's for auto farming. capping your fps to like 30 prevents your device from overheating and exploding and causing a house fire. please note anything 20 and below makes flinging less efficient.")
-
-local fpsCapperEnabled = false
-local fpsCapValue = nil
-
-local function fpsCapIsValid(n) return typeof(n) == "number" and n >= 1 and n <= 999 end
-local function fpsCapApply(n)
-    if not fpsCapIsValid(n) then return false end
-    if not setfpscap then shared.Notify("FPS Capper: executor doesn't support setfpscap", 3) return false end
-    local ok = pcall(setfpscap, n)
-    if not ok then shared.Notify("FPS Capper: setfpscap failed", 3) return false end
-    return true
-end
-
-local function fpsCapRestore()
-    if not setfpscap then return end
-    pcall(setfpscap, 999)
-end
-
-coinSection:AddToggle("FPS Capper", function(bool)
-    fpsCapperEnabled = bool
-    if bool then if fpsCapValue and fpsCapIsValid(fpsCapValue) then fpsCapApply(fpsCapValue) end
-    else fpsCapRestore() end
-end)
-
-coinSection:AddTextBox("FPS Cap", function(text)
-    local n = tonumber(text)
-    if n then fpsCapValue = n else fpsCapValue = nil end
-end)
-
-coinSection:AddButton("Apply FPS", function()
-    if not fpsCapperEnabled then return end
-    if not fpsCapValue then shared.Notify("FPS Capper: enter a valid number first", 3) return end
-    if not fpsCapIsValid(fpsCapValue) then shared.Notify("FPS Capper: value must be 1-999", 3) return end
-    fpsCapApply(fpsCapValue)
-end)
-
 local eventSection = myTab:AddSection("Event", "For MM2 Events!")
 eventSection:AddParagraph("Additional Info", "counter for your current event currency and how much you need until you get the final reward tier\n\nCredits: @drowsynicolas")
 
@@ -2209,8 +2172,6 @@ RootNicolas:GiveTask(function()
     coinStopLoop()
     coinStopDescHook()
     coinRestoreAllColors()
-    fpsCapperEnabled = false
-    fpsCapRestore()
     eventFeatures.showCurrent = false
     eventFeatures.showUntil = false
     eventDestroyGui()
