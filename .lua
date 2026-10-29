@@ -1,15 +1,5 @@
--- Gun Features
--- Controller+
--- Water Proof
--- Disable Trade
--- Client Sided Message
--- Estimated Server Pos
--- Auto Perk
--- Tool Tint
--- Custom Chat
--- Emotes
--- Event
--- Personal
+local shared = odh_shared_plugins
+local myTab = shared.CreateTab("tuff stuff", "/drowsynicolas/drowsynicolas-ODH-icon/refs/heads/main/image")
 
 local table_insert = table.insert
 local nicolas = {}
@@ -55,9 +45,6 @@ function nicolas:Destroy()
 end
 
 local RootNicolas = nicolas.new()
-local shared = odh_shared_plugins
-
-local myTab = shared.CreateTab("tuff stuff", "/drowsynicolas/drowsynicolas-ODH-icon/refs/heads/main/image")
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -374,51 +361,31 @@ local gunFeaturesSection = myTab:AddSection("Gun Features", "Gun Stuff")
 gunFeaturesSection:AddParagraph("Additional Info", "This plugin works for both MM2 and MMV\n\nCredits: @drowsynicolas")
 gunFeaturesSection:AddToggle("Disable Gun Animations", function(bool)
     gunFeatures.blockAnims = bool
-    if bool then
-        enableBlockAnims()
-    else
-        disableBlockAnims()
-    end
+    if bool then enableBlockAnims() else disableBlockAnims() end
 end)
 gunFeaturesSection:AddToggle("Equip/Unequip Gun Sound", function(bool)
     gunFeatures.equipSound = bool
-    if bool then
-        enableEquipSound()
-    else
-        disableEquipSound()
-    end
+    if bool then enableEquipSound() else disableEquipSound() end
 end)
 gunFeaturesSection:AddToggle("Gun Force Field", function(bool)
     gunFeatures.forceField = bool
-    if bool then
-        enableForceField()
-    else
-        disableForceField()
-    end
+    if bool then enableForceField() else disableForceField() end
 end)
 gunFeaturesSection:AddToggle("Custom Dropped Gun Fire Color", function(bool)
     gunFeatures.fireColor = bool
-    if bool then
-        enableFireColor()
-    else
-        disableFireColor()
-    end
+    if bool then enableFireColor() else disableFireColor() end
 end)
 gunFeaturesSection:AddColorpicker("Force Field Color", Color3.fromRGB(0, 100, 255), function(color)
     forceFieldColor = color
-
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj.Name == "GunDrop" and obj:IsA("Part") then
             local sphere = obj:FindFirstChild(FORCE_FIELD_NAME)
-            if sphere then
-                sphere.Color = color
-            end
+            if sphere then sphere.Color = color end
         end
     end
 end)
 gunFeaturesSection:AddColorpicker("Dropped Gun Fire Color", Color3.fromRGB(0, 100, 255), function(color)
     customFireColor = color
-
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj.Name == "GunDrop" and obj:IsA("Part") then
             local fire = obj:FindFirstChild("Fire")
@@ -441,17 +408,13 @@ local spectateMaid = nil
 
 local function toggleShiftLock()
     local mouseLock = LocalPlayer.PlayerScripts:FindFirstChild("MouseLock")
-    if not mouseLock then
-        return
-    end
+    if not mouseLock then return end
     local enabled = mouseLock:GetAttribute("Enabled")
     mouseLock:Invoke(not enabled)
 end
 
 local function shiftLockKeybind()
-    if controllerFeatures.shiftLockEnabled then
-        toggleShiftLock()
-    end
+    if controllerFeatures.shiftLockEnabled then toggleShiftLock() end
 end
 
 local function activatePerk()
@@ -476,16 +439,11 @@ local function activatePerk()
 end
 
 local function perkKeybind()
-    if controllerFeatures.perkEnabled then
-        activatePerk()
-    end
+    if controllerFeatures.perkEnabled then activatePerk() end
 end
 
 local function enableFixScoreboard()
-    if scoreboardMaid then
-        scoreboardMaid:DoCleaning()
-        scoreboardMaid = nil
-    end
+    if scoreboardMaid then scoreboardMaid:DoCleaning() scoreboardMaid = nil end
     scoreboardMaid = nicolas.new()
     local pg = LocalPlayer:WaitForChild("PlayerGui")
     local conn = pg.ChildAdded:Connect(function(child)
@@ -496,9 +454,7 @@ local function enableFixScoreboard()
     end)
     scoreboardMaid:GiveTask(conn)
     for _, v in pairs(pg:GetChildren()) do
-        if v.Name:lower():find("scoreboard") then
-            v:Destroy()
-        end
+        if v.Name:lower():find("scoreboard") then v:Destroy() end
     end
 end
 
@@ -510,21 +466,17 @@ local function disableFixScoreboard()
 end
 
 local function setupSpectateUI()
-    local player = Players.LocalPlayer
-    local playerGui = player:WaitForChild("PlayerGui")
+    local playerGui = LocalPlayer:WaitForChild("PlayerGui")
     local backpackUI = playerGui:FindFirstChild("BackpackUI")
     local backpackContext = playerGui:FindFirstChild("InputContext") and playerGui.InputContext:FindFirstChild("BackpackContext")
     return backpackUI, backpackContext
 end
 
 local function enableSpectateUI()
-    if spectateMaid then
-        spectateMaid:DoCleaning()
-        spectateMaid = nil
-    end
+    if spectateMaid then spectateMaid:DoCleaning() spectateMaid = nil end
     spectateMaid = nicolas.new()
     local backpackUI, backpackContext = setupSpectateUI()
-    local charConn = Players.LocalPlayer.CharacterAdded:Connect(function()
+    local charConn = LocalPlayer.CharacterAdded:Connect(function()
         task.wait(0.5)
         local newUI, newContext = setupSpectateUI()
         backpackUI = newUI
@@ -532,11 +484,9 @@ local function enableSpectateUI()
     end)
     spectateMaid:GiveTask(charConn)
     local renderConn = RunService.RenderStepped:Connect(function()
-        local character = Players.LocalPlayer.Character
+        local character = LocalPlayer.Character
         local root = character and character:FindFirstChild("HumanoidRootPart")
-        if not root or not backpackUI or not backpackContext then
-            return
-        end
+        if not root or not backpackUI or not backpackContext then return end
         local camera = workspace.CurrentCamera
         local distance = (camera.CFrame.Position - root.Position).Magnitude
         local disabled = distance >= 150
@@ -547,21 +497,13 @@ local function enableSpectateUI()
 end
 
 local function disableSpectateUI()
-    if spectateMaid then
-        spectateMaid:DoCleaning()
-        spectateMaid = nil
-    end
-    local player = Players.LocalPlayer
-    local playerGui = player:FindFirstChild("PlayerGui")
+    if spectateMaid then spectateMaid:DoCleaning() spectateMaid = nil end
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
     if playerGui then
         local backpackUI = playerGui:FindFirstChild("BackpackUI")
         local backpackContext = playerGui:FindFirstChild("InputContext") and playerGui.InputContext:FindFirstChild("BackpackContext")
-        if backpackUI then
-            backpackUI.Enabled = true
-        end
-        if backpackContext then
-            backpackContext.Enabled = true
-        end
+        if backpackUI then backpackUI.Enabled = true end
+        if backpackContext then backpackContext.Enabled = true end
     end
 end
 
@@ -569,50 +511,27 @@ local controllerSection = myTab:AddSection("Controller+", "Mobile Controller Sup
 controllerSection:AddParagraph("Additional Info", "Gives you a better mobile controller experience.\n\nCredits: @drowsynicolas")
 controllerSection:AddToggle("Fix Scoreboard Bug", function(bool)
     controllerFeatures.fixScoreboard = bool
-    if bool then
-        enableFixScoreboard()
-    else
-        disableFixScoreboard()
-    end
+    if bool then enableFixScoreboard() else disableFixScoreboard() end
 end)
-controllerSection:AddToggle("Enable Perk", function(bool)
-    controllerFeatures.perkEnabled = bool
-end)
-controllerSection:AddToggle("Enable Shift Lock", function(bool)
-    controllerFeatures.shiftLockEnabled = bool
-end)
+controllerSection:AddToggle("Enable Perk", function(bool) controllerFeatures.perkEnabled = bool end)
+controllerSection:AddToggle("Enable Shift Lock", function(bool) controllerFeatures.shiftLockEnabled = bool end)
 controllerSection:AddToggle("Enable Spectate Keybinds", function(bool)
     controllerFeatures.spectateKeybinds = bool
-    if bool then
-        enableSpectateUI()
-    else
-        disableSpectateUI()
-    end
+    if bool then enableSpectateUI() else disableSpectateUI() end
 end)
-controllerSection:AddKeybind("Perk Keybind", "ButtonX", function()
-    perkKeybind()
-end)
-controllerSection:AddKeybind("Shift Lock", "ButtonL3", function()
-    shiftLockKeybind()
-end)
+controllerSection:AddKeybind("Perk Keybind", "ButtonX", function() perkKeybind() end)
+controllerSection:AddKeybind("Shift Lock", "ButtonL3", function() shiftLockKeybind() end)
 controllerSection:AddKeybind("Spectate Next", "ButtonR1", function()
-    if controllerFeatures.spectateKeybinds then
-        SpectateService:NavigateSpectate(1)
-    end
+    if controllerFeatures.spectateKeybinds then SpectateService:NavigateSpectate(1) end
 end)
 controllerSection:AddKeybind("Spectate Previous", "ButtonL1", function()
-    if controllerFeatures.spectateKeybinds then
-        SpectateService:NavigateSpectate(-1)
-    end
+    if controllerFeatures.spectateKeybinds then SpectateService:NavigateSpectate(-1) end
 end)
 controllerSection:AddKeybind("Toggle Spectate", "ButtonR3", function()
-    if controllerFeatures.spectateKeybinds then
-        SpectateService:ToggleSpectate()
-    end
+    if controllerFeatures.spectateKeybinds then SpectateService:ToggleSpectate() end
 end)
 
 local bombJumpParagraph = controllerSection:AddParagraph("Bomb Jump", "All credits goes to @lzzzx")
-
 local bombJumpEnabled = false
 local bombJumpDebounce = false
 local autoGetBomb = false
@@ -624,13 +543,9 @@ local BOMB_TYPES = {
 }
 
 local function giveBomb()
-    local remote = ReplicatedStorage:FindFirstChild("Remotes")
-        and ReplicatedStorage.Remotes:FindFirstChild("Extras")
-        and ReplicatedStorage.Remotes.Extras:FindFirstChild("ReplicateToy")
+    local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("Extras") and ReplicatedStorage.Remotes.Extras:FindFirstChild("ReplicateToy")
     if remote then
-        pcall(function()
-            remote:InvokeServer("FakeBomb")
-        end)
+        pcall(function() remote:InvokeServer("FakeBomb") end)
     end
 end
 
@@ -638,13 +553,9 @@ local function startAutoGetBomb()
     if autoGetBombCharConn then return end
     autoGetBombCharConn = LocalPlayer.CharacterAdded:Connect(function()
         task.wait(1)
-        if autoGetBomb then
-            giveBomb()
-        end
+        if autoGetBomb then giveBomb() end
     end)
-    if LocalPlayer.Character then
-        giveBomb()
-    end
+    if LocalPlayer.Character then giveBomb() end
 end
 
 local function stopAutoGetBomb()
@@ -654,16 +565,9 @@ local function stopAutoGetBomb()
     end
 end
 
-local bombCooldowns = {
-    FakeBomb = 0,
-    GoldBomb = 0,
-}
-
+local bombCooldowns = { FakeBomb = 0, GoldBomb = 0 }
 LocalPlayer.CharacterAdded:Connect(function()
-    bombCooldowns = {
-        FakeBomb = 0,
-        GoldBomb = 0,
-    }
+    bombCooldowns = { FakeBomb = 0, GoldBomb = 0 }
     bombJumpDebounce = false
 end)
 
@@ -682,57 +586,38 @@ end
 local function getBestAvailableBomb()
     local char = LocalPlayer.Character
     if not char then return nil, nil end
-
     local backpack = LocalPlayer:FindFirstChild("Backpack")
-
     local candidates = {}
     for _, bombType in ipairs(BOMB_TYPES) do
-        local found = char:FindFirstChild(bombType.name)
-            or (backpack and backpack:FindFirstChild(bombType.name))
+        local found = char:FindFirstChild(bombType.name) or (backpack and backpack:FindFirstChild(bombType.name))
         if found and found:IsA("Tool") then
             table.insert(candidates, {tool = found, config = bombType})
         end
     end
-
-    if #candidates == 0 then
-        return nil, nil
-    end
+    if #candidates == 0 then return nil, nil end
 
     local ready = {}
     for _, c in ipairs(candidates) do
-        if isBombReady(c.config.name) then
-            table.insert(ready, c)
-        end
+        if isBombReady(c.config.name) then table.insert(ready, c) end
     end
 
     if #ready == 0 then
-        table.sort(candidates, function(a, b)
-            return getBombRemaining(a.config.name) < getBombRemaining(b.config.name)
-        end)
+        table.sort(candidates, function(a, b) return getBombRemaining(a.config.name) < getBombRemaining(b.config.name) end)
         return nil, candidates[1].config
     end
 
-    if #ready == 1 then
-        return ready[1].tool, ready[1].config
-    end
-
-    table.sort(ready, function(a, b)
-        return a.config.cooldown < b.config.cooldown
-    end)
+    if #ready == 1 then return ready[1].tool, ready[1].config end
+    table.sort(ready, function(a, b) return a.config.cooldown < b.config.cooldown end)
     return ready[1].tool, ready[1].config
 end
 
 local function bombJumpIsInAir()
     local char = LocalPlayer.Character
     if not char then return false end
-
     local humanoid = char:FindFirstChild("Humanoid")
     if not humanoid then return false end
-
     local state = humanoid:GetState()
-    return state == Enum.HumanoidStateType.Jumping
-        or state == Enum.HumanoidStateType.FallingDown
-        or state == Enum.HumanoidStateType.Freefall
+    return state == Enum.HumanoidStateType.Jumping or state == Enum.HumanoidStateType.FallingDown or state == Enum.HumanoidStateType.Freefall
 end
 
 local function startBombJumpCooldown(bombName, duration)
@@ -740,8 +625,7 @@ local function startBombJumpCooldown(bombName, duration)
 end
 
 local function performBombJump()
-    if not bombJumpEnabled then return end
-    if bombJumpDebounce then return end
+    if not bombJumpEnabled or bombJumpDebounce then return end
     if not bombJumpIsInAir() then return end
 
     local char = LocalPlayer.Character
@@ -751,56 +635,34 @@ local function performBombJump()
     if not hrp or not humanoid then return end
 
     local bomb, config = getBestAvailableBomb()
-    if not bomb then
-        return
-    end
+    if not bomb then return end
 
     local previousTool = char:FindFirstChildOfClass("Tool")
-
-    local bombAlreadyEquipped = (bomb.Parent == char)
-    if not bombAlreadyEquipped then
+    if bomb.Parent ~= char then
         local backpack = LocalPlayer:FindFirstChild("Backpack")
         if backpack and bomb.Parent == backpack then
-            pcall(function()
-                humanoid:EquipTool(bomb)
-            end)
+            pcall(function() humanoid:EquipTool(bomb) end)
             task.wait(0.1)
         end
     end
 
     bombJumpDebounce = true
-
     local remote = bomb:FindFirstChild("Remote")
     if remote then
-        pcall(function()
-            remote:FireServer(CFrame.new(hrp.Position - Vector3.new(0, 4, 0)), 50)
-        end)
+        pcall(function() remote:FireServer(CFrame.new(hrp.Position - Vector3.new(0, 4, 0)), 50) end)
     end
 
     task.wait(0.05)
-
-    hrp.AssemblyLinearVelocity = Vector3.new(
-        hrp.AssemblyLinearVelocity.X,
-        58,
-        hrp.AssemblyLinearVelocity.Z
-    )
-
-    pcall(function()
-        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-    end)
-
+    hrp.AssemblyLinearVelocity = Vector3.new(hrp.AssemblyLinearVelocity.X, 58, hrp.AssemblyLinearVelocity.Z)
+    pcall(function() humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end)
     startBombJumpCooldown(config.name, config.cooldown)
 
     task.spawn(function()
         task.wait(0.15)
         if previousTool and previousTool.Parent then
-            pcall(function()
-                humanoid:EquipTool(previousTool)
-            end)
+            pcall(function() humanoid:EquipTool(previousTool) end)
         else
-            pcall(function()
-                humanoid:UnequipTools()
-            end)
+            pcall(function() humanoid:UnequipTools() end)
         end
     end)
 
@@ -810,26 +672,14 @@ local function performBombJump()
     end)
 end
 
-controllerSection:AddToggle("Enable Bomb Jump Keybinds", function(bool)
-    bombJumpEnabled = bool
-end)
-
+controllerSection:AddToggle("Enable Bomb Jump Keybinds", function(bool) bombJumpEnabled = bool end)
 controllerSection:AddToggle("Auto Get Bomb", function(bool)
     autoGetBomb = bool
-    if bool then
-        startAutoGetBomb()
-    else
-        stopAutoGetBomb()
-    end
+    if bool then startAutoGetBomb() else stopAutoGetBomb() end
 end)
+controllerSection:AddKeybind("Bomb Jump", "null", function() performBombJump() end)
 
-controllerSection:AddKeybind("Bomb Jump", "null", function()
-    performBombJump()
-end)
-
-local waterFeatures = {
-    waterImmunity = false,
-}
+local waterFeatures = { waterImmunity = false }
 local waterMaid = nil
 local modifiedParts = {}
 local waterPartConnections = {}
@@ -837,10 +687,7 @@ local waterPartConnections = {}
 local function DisableWaterPart(part)
     if part and part:IsA("BasePart") then
         if not modifiedParts[part] then
-            modifiedParts[part] = {
-                CanTouch = part.CanTouch,
-                CanCollide = part.CanCollide,
-            }
+            modifiedParts[part] = { CanTouch = part.CanTouch, CanCollide = part.CanCollide }
         end
         part.CanTouch = false
         part.CanCollide = false
@@ -863,15 +710,11 @@ local function GetWaterPart()
         local intereactive = yacht:FindFirstChild("Intereactive")
         if intereactive then
             local water = intereactive:FindFirstChild("Water")
-            if water then
-                return water:FindFirstChild("WaterPart")
-            end
+            if water then return water:FindFirstChild("WaterPart") end
         end
     end
     local pier = Workspace:FindFirstChild("Pier")
-    if pier then
-        return pier:FindFirstChild("Respawn")
-    end
+    if pier then return pier:FindFirstChild("Respawn") end
     return nil
 end
 
@@ -880,29 +723,20 @@ local function MonitorWaterPart(part)
     DisableWaterPart(part)
     if not waterPartConnections[part] then
         waterPartConnections[part] = part.ChildAdded:Connect(function(child)
-            if child:IsA("BasePart") then
-                DisableWaterPart(child)
-            end
+            if child:IsA("BasePart") then DisableWaterPart(child) end
         end)
-        if waterMaid then
-            waterMaid:GiveTask(waterPartConnections[part])
-        end
+        if waterMaid then waterMaid:GiveTask(waterPartConnections[part]) end
     end
 end
 
 local function CheckWaterPart()
     if not waterFeatures.waterImmunity then return end
     local part = GetWaterPart()
-    if part then
-        MonitorWaterPart(part)
-    end
+    if part then MonitorWaterPart(part) end
 end
 
 local function enableWaterImmunity()
-    if waterMaid then
-        waterMaid:DoCleaning()
-        waterMaid = nil
-    end
+    if waterMaid then waterMaid:DoCleaning() waterMaid = nil end
     waterFeatures.waterImmunity = true
     waterMaid = nicolas.new()
     waterPartConnections = {}
@@ -911,13 +745,8 @@ end
 
 local function disableWaterImmunity()
     waterFeatures.waterImmunity = false
-    if waterMaid then
-        waterMaid:DoCleaning()
-        waterMaid = nil
-    end
-    for _, conn in pairs(waterPartConnections) do
-        conn:Disconnect()
-    end
+    if waterMaid then waterMaid:DoCleaning() waterMaid = nil end
+    for _, conn in pairs(waterPartConnections) do conn:Disconnect() end
     waterPartConnections = {}
     RestoreAllParts()
 end
@@ -925,62 +754,40 @@ end
 local waterSection = myTab:AddSection("Water Proof", "Water Immunity")
 waterSection:AddParagraph("Additional Info", "Makes you immune to water\n\nCredits: @drowsynicolas")
 waterSection:AddToggle("Water Immunity", function(bool)
-    if bool then
-        enableWaterImmunity()
-    else
-        disableWaterImmunity()
-    end
+    if bool then enableWaterImmunity() else disableWaterImmunity() end
 end)
 
 local antiTradeMaid = nil
 
 local function destroyTrade()
     local trade = ReplicatedStorage:FindFirstChild("Trade")
-    if trade then
-        trade:Destroy()
-    end
+    if trade then trade:Destroy() end
 end
 
 local function enableAntiTrade()
-    if antiTradeMaid then
-        antiTradeMaid:DoCleaning()
-        antiTradeMaid = nil
-    end
+    if antiTradeMaid then antiTradeMaid:DoCleaning() antiTradeMaid = nil end
     antiTradeMaid = nicolas.new()
     destroyTrade()
     antiTradeMaid:GiveTask(ReplicatedStorage.ChildAdded:Connect(function(child)
-        if child.Name == "Trade" then
-            child:Destroy()
-        end
+        if child.Name == "Trade" then child:Destroy() end
     end))
-    antiTradeMaid:GiveTask(RunService.Heartbeat:Connect(function()
-        destroyTrade()
-    end))
+    antiTradeMaid:GiveTask(RunService.Heartbeat:Connect(function() destroyTrade() end))
 end
 
 local function disableAntiTrade()
-    if antiTradeMaid then
-        antiTradeMaid:DoCleaning()
-        antiTradeMaid = nil
-    end
+    if antiTradeMaid then antiTradeMaid:DoCleaning() antiTradeMaid = nil end
 end
 
 local tradeSection = myTab:AddSection("Disable Trade", "fucks the trade system")
 tradeSection:AddParagraph("Additional Info", "Destroys the system trade relies on\n\nCredits: @drowsynicolas")
 tradeSection:AddToggle("Disable Trade", function(bool)
-    if bool then
-        enableAntiTrade()
-    else
-        disableAntiTrade()
-    end
+    if bool then enableAntiTrade() else disableAntiTrade() end
 end)
 
 local messageSection = myTab:AddSection("Client Sided Message", "just for fun")
 messageSection:AddParagraph("Additional Info", "sends a message client sided, u can say anything it'll go through\n\nCredits: @drowsynicolas")
 local messageText = ""
-messageSection:AddTextBox("Your message", function(text)
-    messageText = text
-end)
+messageSection:AddTextBox("Your message", function(text) messageText = text end)
 messageSection:AddButton("Send Message", function()
     if messageText == "" then return end
     local character = LocalPlayer.Character
@@ -1004,31 +811,19 @@ local serverPosTransparency = 0.5
 local serverPosHideInFirstPerson = false
 
 local function destroyServerPosMarker()
-    if serverPosConnection then
-        serverPosConnection:Disconnect()
-        serverPosConnection = nil
-    end
-    if serverPosHealthConnection then
-        serverPosHealthConnection:Disconnect()
-        serverPosHealthConnection = nil
-    end
-    if serverPosMarker then
-        serverPosMarker:Destroy()
-        serverPosMarker = nil
-    end
+    if serverPosConnection then serverPosConnection:Disconnect() serverPosConnection = nil end
+    if serverPosHealthConnection then serverPosHealthConnection:Disconnect() serverPosHealthConnection = nil end
+    if serverPosMarker then serverPosMarker:Destroy() serverPosMarker = nil end
     serverPosHistory = {}
 end
 
 local function getServerPosPing()
-    local success, value = pcall(function()
-        return game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()
-    end)
+    local success, value = pcall(function() return game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() end)
     return success and math.clamp(value, 10, 1000) or 10
 end
 
 local function createServerPosMarker(character)
     destroyServerPosMarker()
-
     serverPosRoot = character:WaitForChild("HumanoidRootPart")
     serverPosHumanoid = character:WaitForChild("Humanoid")
 
@@ -1046,9 +841,7 @@ local function createServerPosMarker(character)
     serverPosMarker.Parent = workspace
 
     serverPosHealthConnection = serverPosHumanoid.HealthChanged:Connect(function(health)
-        if health <= 0 then
-            destroyServerPosMarker()
-        end
+        if health <= 0 then destroyServerPosMarker() end
     end)
 
     serverPosConnection = RunService.Heartbeat:Connect(function()
@@ -1060,14 +853,10 @@ local function createServerPosMarker(character)
             rotation = serverPosRoot.CFrame - serverPosRoot.Position,
             time = tick()
         })
-
-        while #serverPosHistory > 120 do
-            table.remove(serverPosHistory, 1)
-        end
+        while #serverPosHistory > 120 do table.remove(serverPosHistory, 1) end
 
         local target = tick() - getServerPosPing() / 1000
         local closest = serverPosHistory[1]
-
         for _, entry in ipairs(serverPosHistory) do
             if math.abs(entry.time - target) < math.abs(closest.time - target) then
                 closest = entry
@@ -1095,52 +884,32 @@ local function enableServerPos()
     if not serverPosCharAddedConn then
         serverPosCharAddedConn = LocalPlayer.CharacterAdded:Connect(function(character)
             task.wait()
-            if serverPosEnabled then
-                createServerPosMarker(character)
-            end
+            if serverPosEnabled then createServerPosMarker(character) end
         end)
     end
-    if LocalPlayer.Character then
-        createServerPosMarker(LocalPlayer.Character)
-    end
+    if LocalPlayer.Character then createServerPosMarker(LocalPlayer.Character) end
 end
 
 local function disableServerPos()
     serverPosEnabled = false
-    if serverPosCharAddedConn then
-        serverPosCharAddedConn:Disconnect()
-        serverPosCharAddedConn = nil
-    end
+    if serverPosCharAddedConn then serverPosCharAddedConn:Disconnect() serverPosCharAddedConn = nil end
     destroyServerPosMarker()
 end
 
 serverPosSection:AddToggle("Show Server Pos", function(bool)
-    if bool then
-        enableServerPos()
-    else
-        disableServerPos()
-    end
+    if bool then enableServerPos() else disableServerPos() end
 end)
-
 serverPosSection:AddToggle("Hide In First Person", function(bool)
     serverPosHideInFirstPerson = bool
-    if not bool and serverPosMarker then
-        serverPosMarker.Transparency = serverPosTransparency
-    end
+    if not bool and serverPosMarker then serverPosMarker.Transparency = serverPosTransparency end
 end)
-
 serverPosSection:AddSlider("Marker Transparency", 1, 10, 5, function(value)
     serverPosTransparency = value / 10
-    if serverPosMarker and not serverPosHideInFirstPerson then
-        serverPosMarker.Transparency = serverPosTransparency
-    end
+    if serverPosMarker and not serverPosHideInFirstPerson then serverPosMarker.Transparency = serverPosTransparency end
 end)
-
 serverPosSection:AddColorpicker("Marker Color", Color3.fromRGB(255, 255, 255), function(color)
     serverPosColor = color
-    if serverPosMarker then
-        serverPosMarker.Color = color
-    end
+    if serverPosMarker then serverPosMarker.Color = color end
 end)
 
 local autoPerkSection = myTab:AddSection("Auto Perk", "automatically equips perks")
@@ -1148,44 +917,22 @@ autoPerkSection:AddParagraph("Additional Info", "equips the perk you picked for 
 
 local autoPerkEnabled = false
 local autoPerkMapConn = nil
-
-local VALID_PERKS = {
-    "Footsteps",
-    "Xray",
-    "Trap",
-    "Sprint",
-    "Sleight",
-    "Ninja",
-    "Haste",
-    "Ghost",
-    "FakeGun",
-    "Decoy",
-}
-
+local VALID_PERKS = { "Footsteps", "Xray", "Trap", "Sprint", "Sleight", "Ninja", "Haste", "Ghost", "FakeGun", "Decoy" }
 local MAP_LIST = {
-    {name = "House 2", keyword = "House2"},
-    {name = "Factory", keyword = "Factory"},
-    {name = "Milbase", keyword = "MilBase"},
-    {name = "Workplace", keyword = "Workplace"},
-    {name = "Mansion 2", keyword = "Mansion2"},
-    {name = "Research Facility", keyword = "ResearchFacility"},
-    {name = "Police Station", keyword = "PoliceStation"},
-    {name = "Bio Lab", keyword = "BioLab"},
-    {name = "Bank 2", keyword = "Bank2"},
-    {name = "Office 2014", keyword = "Office2014"},
-    {name = "Hospital 2014", keyword = "Hospital2014"},
-    {name = "Hotel 2014", keyword = "Hotel2014"},
+    {name = "House 2", keyword = "House2"}, {name = "Factory", keyword = "Factory"},
+    {name = "Milbase", keyword = "MilBase"}, {name = "Workplace", keyword = "Workplace"},
+    {name = "Mansion 2", keyword = "Mansion2"}, {name = "Research Facility", keyword = "ResearchFacility"},
+    {name = "Police Station", keyword = "PoliceStation"}, {name = "Bio Lab", keyword = "BioLab"},
+    {name = "Bank 2", keyword = "Bank2"}, {name = "Office 2014", keyword = "Office2014"},
+    {name = "Hospital 2014", keyword = "Hospital2014"}, {name = "Hotel 2014", keyword = "Hotel2014"},
 }
-
 local autoPerkChoices = {}
 
 local function normalizePerk(text)
     if not text or text == "" then return nil end
     local cleaned = text:gsub("%s+", ""):lower()
     for _, perk in ipairs(VALID_PERKS) do
-        if perk:lower() == cleaned then
-            return perk
-        end
+        if perk:lower() == cleaned then return perk end
     end
     return nil
 end
@@ -1202,18 +949,14 @@ local function equipPerk(perkName)
     if not perkName then return end
     if LocalPlayer:GetAttribute("EquippedPerk") == perkName then return end
     local remote = getPerkEquipRemote()
-    if remote then
-        remote:FireServer(perkName, "Perks")
-    end
+    if remote then remote:FireServer(perkName, "Perks") end
 end
 
 local function getCurrentMap()
     for _, child in ipairs(workspace:GetChildren()) do
         if child:IsA("Model") or child:IsA("Folder") then
             for _, entry in ipairs(MAP_LIST) do
-                if child.Name == entry.keyword then
-                    return entry.keyword
-                end
+                if child.Name == entry.keyword then return entry.keyword end
             end
         end
     end
@@ -1222,9 +965,7 @@ end
 
 local function isMapName(name)
     for _, entry in ipairs(MAP_LIST) do
-        if entry.keyword == name then
-            return true
-        end
+        if entry.keyword == name then return true end
     end
     return false
 end
@@ -1239,41 +980,25 @@ local function tryAutoEquip()
 end
 
 local function startAutoPerk()
-    if autoPerkMapConn then
-        autoPerkMapConn:Disconnect()
-        autoPerkMapConn = nil
-    end
-
+    if autoPerkMapConn then autoPerkMapConn:Disconnect() autoPerkMapConn = nil end
     autoPerkMapConn = workspace.ChildAdded:Connect(function(child)
         if not child:IsA("Model") and not child:IsA("Folder") then return end
         if not isMapName(child.Name) then return end
         task.wait(0.5)
         tryAutoEquip()
     end)
-
-    task.spawn(function()
-        tryAutoEquip()
-    end)
+    task.spawn(function() tryAutoEquip() end)
 end
 
 local function stopAutoPerk()
-    if autoPerkMapConn then
-        autoPerkMapConn:Disconnect()
-        autoPerkMapConn = nil
-    end
+    if autoPerkMapConn then autoPerkMapConn:Disconnect() autoPerkMapConn = nil end
 end
 
 autoPerkSection:AddToggle("Auto Perk", function(bool)
     autoPerkEnabled = bool
-    if bool then
-        startAutoPerk()
-    else
-        stopAutoPerk()
-    end
+    if bool then startAutoPerk() else stopAutoPerk() end
 end)
-
 autoPerkSection:AddParagraph("Valid Perks", "Type the perk name for each map. Valid inputs: Footsteps, Xray, Trap, Sprint, Sleight, Ninja, Haste, Ghost, FakeGun, Decoy")
-
 for _, mapEntry in ipairs(MAP_LIST) do
     autoPerkSection:AddTextBox(mapEntry.name, function(text)
         if text == "" then return end
@@ -1281,15 +1006,11 @@ for _, mapEntry in ipairs(MAP_LIST) do
         if perk then
             autoPerkChoices[mapEntry.keyword] = perk
             shared.Notify("Auto Perk: \"" .. perk .. "\" selected for " .. mapEntry.name, 3)
-            if autoPerkEnabled then
-                tryAutoEquip()
-            end
+            if autoPerkEnabled then tryAutoEquip() end
         else
             autoPerkChoices[mapEntry.keyword] = "Footsteps"
             shared.Notify("Auto Perk: invalid input, fallback to Footsteps", 3)
-            if autoPerkEnabled then
-                tryAutoEquip()
-            end
+            if autoPerkEnabled then tryAutoEquip() end
         end
     end)
 end
@@ -1320,9 +1041,7 @@ local function applyToolTint(tool)
 
     local highlight = tool:FindFirstChild("ToolTint")
     if didVertexColor then
-        if highlight then
-            highlight:Destroy()
-        end
+        if highlight then highlight:Destroy() end
     else
         if not highlight then
             highlight = Instance.new("Highlight")
@@ -1348,104 +1067,63 @@ local function removeToolTint(tool)
         end
     end
     local highlight = tool:FindFirstChild("ToolTint")
-    if highlight then
-        highlight:Destroy()
-    end
+    if highlight then highlight:Destroy() end
 end
 
 local function monitorToolTintCharacter(character)
-    for _, object in ipairs(character:GetChildren()) do
-        applyToolTint(object)
-    end
-
-    if toolTintChildConnection then
-        toolTintChildConnection:Disconnect()
-    end
-
+    for _, object in ipairs(character:GetChildren()) do applyToolTint(object) end
+    if toolTintChildConnection then toolTintChildConnection:Disconnect() end
     toolTintChildConnection = character.ChildAdded:Connect(function(object)
-        if toolTintEnabled then
-            applyToolTint(object)
-        end
+        if toolTintEnabled then applyToolTint(object) end
     end)
 end
 
 local function clearAllToolTints()
     local char = LocalPlayer.Character
     if char then
-        for _, object in ipairs(char:GetChildren()) do
-            removeToolTint(object)
-        end
+        for _, object in ipairs(char:GetChildren()) do removeToolTint(object) end
     end
     local backpack = LocalPlayer:FindFirstChild("Backpack")
     if backpack then
-        for _, object in ipairs(backpack:GetChildren()) do
-            removeToolTint(object)
-        end
+        for _, object in ipairs(backpack:GetChildren()) do removeToolTint(object) end
     end
 end
 
 local function enableToolTint()
     toolTintEnabled = true
-
-    if toolTintCharacterConnection then
-        toolTintCharacterConnection:Disconnect()
-    end
-
+    if toolTintCharacterConnection then toolTintCharacterConnection:Disconnect() end
     toolTintCharacterConnection = LocalPlayer.CharacterAdded:Connect(monitorToolTintCharacter)
-
-    if LocalPlayer.Character then
-        monitorToolTintCharacter(LocalPlayer.Character)
-    end
+    if LocalPlayer.Character then monitorToolTintCharacter(LocalPlayer.Character) end
 end
 
 local function disableToolTint()
     toolTintEnabled = false
-
-    if toolTintCharacterConnection then
-        toolTintCharacterConnection:Disconnect()
-        toolTintCharacterConnection = nil
-    end
-    if toolTintChildConnection then
-        toolTintChildConnection:Disconnect()
-        toolTintChildConnection = nil
-    end
-
+    if toolTintCharacterConnection then toolTintCharacterConnection:Disconnect() toolTintCharacterConnection = nil end
+    if toolTintChildConnection then toolTintChildConnection:Disconnect() toolTintChildConnection = nil end
     clearAllToolTints()
 end
 
 itemTintSection:AddToggle("Tool Tint", function(bool)
-    if bool then
-        enableToolTint()
-    else
-        disableToolTint()
-    end
+    if bool then enableToolTint() else disableToolTint() end
 end)
-
 itemTintSection:AddSlider("Tint Transparency", 1, 10, 5, function(value)
     toolTintTransparency = value / 10
-
     local char = LocalPlayer.Character
     if char then
         for _, object in ipairs(char:GetChildren()) do
             if object:IsA("Tool") then
                 local highlight = object:FindFirstChild("ToolTint")
-                if highlight then
-                    highlight.FillTransparency = toolTintTransparency
-                end
+                if highlight then highlight.FillTransparency = toolTintTransparency end
             end
         end
     end
 end)
-
 itemTintSection:AddColorpicker("Tool Tint Color", Color3.fromRGB(255, 255, 255), function(color)
     toolTintColor = color
-
     local char = LocalPlayer.Character
     if char then
         for _, object in ipairs(char:GetChildren()) do
-            if object:IsA("Tool") then
-                applyToolTint(object)
-            end
+            if object:IsA("Tool") then applyToolTint(object) end
         end
     end
 end)
@@ -1464,9 +1142,7 @@ local currentSoundId = nil
 local chattedConnections = {}
 local playerAddedConn = nil
 
-local function getBubbleConfig()
-    return TextChatService:FindFirstChildOfClass("BubbleChatConfiguration")
-end
+local function getBubbleConfig() return TextChatService:FindFirstChildOfClass("BubbleChatConfiguration") end
 
 local function applyChatColors()
     local config = getBubbleConfig()
@@ -1503,9 +1179,7 @@ end
 
 local function buildURL(input)
     local path = input:gsub("^https://raw%.githubusercontent%.com", "")
-    if path:sub(1, 1) ~= "/" then
-        path = "/" .. path
-    end
+    if path:sub(1, 1) ~= "/" then path = "/" .. path end
     return "https://raw.githubusercontent.com" .. path
 end
 
@@ -1513,12 +1187,10 @@ local function loadChatSound(input)
     if type(input) ~= "string" then return end
     input = input:gsub("^%s+", ""):gsub("%s+$", "")
     if input == "" then return end
-
     if not isfile or not writefile or not game.HttpGet then
         shared.Notify("Custom Chat: executor doesn't support file downloads", 3)
         return
     end
-
     local getasset = getcustomasset or getsynasset
     if not getasset then
         shared.Notify("Custom Chat: executor doesn't support custom assets", 3)
@@ -1530,9 +1202,7 @@ local function loadChatSound(input)
 
     if not isfile(fileName) then
         shared.Notify("Custom Chat: downloading...", 2)
-        local success = pcall(function()
-            writefile(fileName, game:HttpGet(fullURL))
-        end)
+        local success = pcall(function() writefile(fileName, game:HttpGet(fullURL)) end)
         if not success then
             shared.Notify("Custom Chat: download failed", 3)
             return
@@ -1561,41 +1231,27 @@ local function playChatSound(player)
     sound.Volume = 0.5
     sound.Parent = hrp
     sound:Play()
-
-    sound.Ended:Connect(function()
-        sound:Destroy()
-    end)
+    sound.Ended:Connect(function() sound:Destroy() end)
 end
 
 local function hookPlayer(player)
     if chattedConnections[player] then return end
     chattedConnections[player] = player.Chatted:Connect(function()
-        if chatSoundEnabled then
-            playChatSound(player)
-        end
+        if chatSoundEnabled then playChatSound(player) end
     end)
 end
 
 local function enableChatSound()
     chatSoundEnabled = true
-    for _, player in ipairs(Players:GetPlayers()) do
-        hookPlayer(player)
-    end
-    if not playerAddedConn then
-        playerAddedConn = Players.PlayerAdded:Connect(hookPlayer)
-    end
+    for _, player in ipairs(Players:GetPlayers()) do hookPlayer(player) end
+    if not playerAddedConn then playerAddedConn = Players.PlayerAdded:Connect(hookPlayer) end
 end
 
 local function disableChatSound()
     chatSoundEnabled = false
-    for player, conn in pairs(chattedConnections) do
-        conn:Disconnect()
-    end
+    for player, conn in pairs(chattedConnections) do conn:Disconnect() end
     chattedConnections = {}
-    if playerAddedConn then
-        playerAddedConn:Disconnect()
-        playerAddedConn = nil
-    end
+    if playerAddedConn then playerAddedConn:Disconnect() playerAddedConn = nil end
 end
 
 Players.PlayerRemoving:Connect(function(player)
@@ -1608,42 +1264,23 @@ end)
 
 chatSection:AddToggle("Custom Chat Color", function(bool)
     chatColorEnabled = bool
-    if bool then
-        applyChatColors()
-    else
-        restoreChatColors()
-    end
+    if bool then applyChatColors() else restoreChatColors() end
 end)
-
 chatSection:AddToggle("Custom Chat Sound", function(bool)
-    if bool then
-        enableChatSound()
-    else
-        disableChatSound()
-    end
+    if bool then enableChatSound() else disableChatSound() end
 end)
-
-chatSection:AddToggle("Mute Others Chat Sound", function(bool)
-    muteOthersChatSound = bool
-end)
-
+chatSection:AddToggle("Mute Others Chat Sound", function(bool) muteOthersChatSound = bool end)
 chatSection:AddTextBox("Sound URL", function(text)
     if text == "" then return end
     loadChatSound(text)
 end)
-
 chatSection:AddColorpicker("Chat Bubble Color", Color3.fromRGB(255, 255, 255), function(color)
     chatBubbleColor = color
-    if chatColorEnabled then
-        applyChatColors()
-    end
+    if chatColorEnabled then applyChatColors() end
 end)
-
 chatSection:AddColorpicker("Chat Text Color", Color3.fromRGB(0, 0, 0), function(color)
     chatTextColor = color
-    if chatColorEnabled then
-        applyChatColors()
-    end
+    if chatColorEnabled then applyChatColors() end
 end)
 
 local emotesSection = myTab:AddSection("Emotes", "play any emote")
@@ -1659,45 +1296,22 @@ local function playEmote(emoteName)
     if not animate then return end
     local remote = animate:FindFirstChild("PlayEmote")
     if not remote then return end
-    pcall(function()
-        remote:Invoke(emoteName)
-    end)
+    pcall(function() remote:Invoke(emoteName) end)
 end
 
-emotesSection:AddToggle("Emote keybinds", function(bool)
-    emoteKeybindsEnabled = bool
-end)
-
-emotesSection:AddKeybind("Sit", "null", function()
-    playEmote("sit2")
-end)
-
-emotesSection:AddKeybind("Dab", "null", function()
-    playEmote("dab")
-end)
-
-emotesSection:AddKeybind("Ninja's Rest", "null", function()
-    playEmote("ninja")
-end)
-
-emotesSection:AddKeybind("Zen", "null", function()
-    playEmote("zen")
-end)
-
-emotesSection:AddKeybind("Zombie", "null", function()
-    playEmote("zombie")
-end)
-
-emotesSection:AddKeybind("Headless", "null", function()
-    playEmote("headless")
-end)
+emotesSection:AddToggle("Emote keybinds", function(bool) emoteKeybindsEnabled = bool end)
+emotesSection:AddKeybind("Sit", "null", function() playEmote("sit2") end)
+emotesSection:AddKeybind("Dab", "null", function() playEmote("dab") end)
+emotesSection:AddKeybind("Ninja's Rest", "null", function() playEmote("ninja") end)
+emotesSection:AddKeybind("Zen", "null", function() playEmote("zen") end)
+emotesSection:AddKeybind("Zombie", "null", function() playEmote("zombie") end)
+emotesSection:AddKeybind("Headless", "null", function() playEmote("headless") end)
 
 local eventSection = myTab:AddSection("Event", "For MM2 Events!")
 eventSection:AddParagraph("Additional Info", "counter for your current event currency and how much you need until you get the final reward tier\n\nCredits: @drowsynicolas")
 
 local eventFeatures = { showCurrent = false, showUntil = false }
 local EVENT_TARGET = 100000
-
 local eventGui = nil
 local eventCurrentLabel = nil
 local eventUntilLabel = nil
@@ -1719,10 +1333,7 @@ end
 
 local function eventUpdateLabels()
     if not eventCurrentLabel or not eventUntilLabel then return end
-    if not eventCandyLabel or not eventCandyLabel.Parent then
-        eventCandyLabel = eventTryFindCandyLabel()
-    end
-
+    if not eventCandyLabel or not eventCandyLabel.Parent then eventCandyLabel = eventTryFindCandyLabel() end
     if eventCandyLabel then
         local raw = eventCandyLabel.Text
         eventCurrentLabel.Text = raw
@@ -1758,7 +1369,6 @@ end
 
 local function eventCreateGui()
     if eventGui then return end
-
     eventGui = Instance.new("ScreenGui")
     eventGui.Name = "gatito"
     eventGui.ResetOnSpawn = false
@@ -1787,7 +1397,6 @@ local function eventCreateGui()
     eventUntilLabel.Text = "?"
     eventUntilLabel.Visible = false
     eventUntilLabel.Parent = eventGui
-    
     eventHookCandyLabel()
 end
 
@@ -1836,7 +1445,6 @@ eventSection:AddToggle("Show Current Candies", function(bool)
     eventFeatures.showCurrent = bool
     eventRefreshVisibility()
 end)
-
 eventSection:AddToggle("Show Candies Until Emberbow", function(bool)
     eventFeatures.showUntil = bool
     eventRefreshVisibility()
@@ -1845,14 +1453,9 @@ end)
 local personalSection = myTab:AddSection("Personal", "hi")
 personalSection:AddParagraph("Additional Info", "code i'd rather put into my plugin than execute it individually\n\nall credits obviously go to me haha @drowsynicolas")
 
-local personalFeatures = {
-    infJump = false,
-    autoBroom = false,
-}
-
+local personalFeatures = { infJump = false, autoBroom = false }
 local infJumpBoost = 40
 local infJumpFallMul = 1.0
-
 local infJumpHeartbeatConn = nil
 local infJumpRequestConn = nil
 local infJumpHeld = false
@@ -1861,32 +1464,21 @@ local function infJumpHeartbeat()
     if not personalFeatures.infJump then return end
     local char = LocalPlayer.Character
     if not char then return end
-
     local humanoid = char:FindFirstChildOfClass("Humanoid")
     local root = char:FindFirstChild("HumanoidRootPart")
     if not humanoid or not root then return end
 
     local vel = root.AssemblyLinearVelocity
-
-    if infJumpHeld then
-        root.AssemblyLinearVelocity = Vector3.new(vel.X, infJumpBoost, vel.Z)
-    end
-    if vel.Y < 0 and infJumpFallMul ~= 1.0 then
-        root.AssemblyLinearVelocity = Vector3.new(vel.X, vel.Y * infJumpFallMul, vel.Z)
-    end
-    if not humanoid.Jump then
-        infJumpHeld = false
-    end
+    if infJumpHeld then root.AssemblyLinearVelocity = Vector3.new(vel.X, infJumpBoost, vel.Z) end
+    if vel.Y < 0 and infJumpFallMul ~= 1.0 then root.AssemblyLinearVelocity = Vector3.new(vel.X, vel.Y * infJumpFallMul, vel.Z) end
+    if not humanoid.Jump then infJumpHeld = false end
 end
 
 local function infJumpStart()
     if infJumpHeartbeatConn then return end
     local uis = game:GetService("UserInputService")
-
     infJumpRequestConn = uis.JumpRequest:Connect(function()
-        if personalFeatures.infJump then
-            infJumpHeld = true
-        end
+        if personalFeatures.infJump then infJumpHeld = true end
     end)
     infJumpHeartbeatConn = RunService.Heartbeat:Connect(infJumpHeartbeat)
 end
@@ -1901,15 +1493,11 @@ local autoBroomConn = nil
 local function autoBroomOnCharacter(character)
     task.wait(2)
     if LocalPlayer.Character ~= character or not personalFeatures.autoBroom then return end
-
     local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("Extras") and ReplicatedStorage.Remotes.Extras:FindFirstChild("ReplicateToy")
     if not remote then return end
-
     pcall(function() remote:InvokeServer("Broom26") end)
-
     local backpack = LocalPlayer:FindFirstChild("Backpack")
     local tool = character:FindFirstChild("Broom26") or (backpack and backpack:FindFirstChild("Broom26"))
-
     if tool and tool:IsA("Tool") then
         tool.Parent = character
         pcall(function() tool:Activate() end)
@@ -1930,18 +1518,554 @@ personalSection:AddToggle("Inf Jump", function(bool)
     personalFeatures.infJump = bool
     if bool then infJumpStart() else infJumpStop() end
 end)
-
-personalSection:AddSlider("Jump Boost", 10, 100, 40, function(value)
-    infJumpBoost = value
-end)
-
-personalSection:AddSlider("Fall Multiplier", 1, 10, 10, function(value)
-    infJumpFallMul = value / 10
-end)
-
+personalSection:AddSlider("Jump Boost", 10, 100, 40, function(value) infJumpBoost = value end)
+personalSection:AddSlider("Fall Multiplier", 1, 10, 10, function(value) infJumpFallMul = value / 10 end)
 personalSection:AddToggle("Auto Broom", function(bool)
     personalFeatures.autoBroom = bool
     if bool then autoBroomStart() else autoBroomStop() end
+end)
+
+local farmMiscSection = myTab:AddSection("Farm Misc", "MM2")
+farmMiscSection:AddParagraph("Additional Info", "just some features made for auto farming\n\nCredit: @drowsynicolas")
+farmMiscSection:AddParagraph("Safe Spawn", "prevents you from being killed first when you spawn in the map. yes, i know this is already a feature in the main auto farm tab, it’s just that i like this code better")
+
+local safeSpawnEnabled = false
+local LOCK_POSITION = Vector3.new(0, 999, 0)
+local coinAreasStartTime = nil
+
+local function findCoinAreas()
+    for _, top in ipairs(workspace:GetChildren()) do
+        if top:IsA("Model") then
+            local areas = top:FindFirstChild("CoinAreas")
+            if areas then return areas end
+            for _, child in ipairs(top:GetChildren()) do
+                if child:IsA("Model") then
+                    local a2 = child:FindFirstChild("CoinAreas")
+                    if a2 then return a2 end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+task.spawn(function()
+    while task.wait() do
+        if safeSpawnEnabled then
+            local areas = findCoinAreas()
+            if areas then
+                if not coinAreasStartTime then coinAreasStartTime = tick() end
+                if tick() - coinAreasStartTime >= 5 then
+                    local char = LocalPlayer.Character
+                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        hrp.CFrame = CFrame.new(LOCK_POSITION)
+                        hrp.AssemblyLinearVelocity = Vector3.zero
+                        hrp.AssemblyAngularVelocity = Vector3.zero
+                    end
+                end
+            else
+                coinAreasStartTime = nil
+            end
+        else
+            coinAreasStartTime = nil
+        end
+    end
+end)
+
+farmMiscSection:AddToggle("Safe Spawn", function(state) safeSpawnEnabled = state end)
+
+farmMiscSection:AddParagraph("FPS Capper", "caps your fps so your device uses less power resulting in it not overheating and causing a house fire. keep in mind capping fps persist, so to uncap your fps close roblox entirely. or just disable the toggle ;-;")
+local fpsCapperEnabled = false
+local fpsCapLimit = 60
+
+local function applyFpsCap()
+    if fpsCapperEnabled then
+        if setfpscap then pcall(function() setfpscap(fpsCapLimit) end) end
+    else
+        if setfpscap then pcall(function() setfpscap(9999) end) end
+    end
+end
+
+farmMiscSection:AddToggle("FPS Capper", function(state)
+    fpsCapperEnabled = state
+    applyFpsCap()
+end)
+farmMiscSection:AddParagraph("Cap Limit", "")
+farmMiscSection:AddTextBox("Set FPS Cap", function(text)
+    local num = tonumber(text)
+    if num and num >= 5 then
+        fpsCapLimit = math.floor(num)
+        if fpsCapperEnabled then applyFpsCap() end
+    else
+        shared.Notify("FPS Capper: Please enter a number 5 or higher.", 3)
+    end
+end)
+
+local showPingEnabled = false
+local showFpsEnabled = false
+local statsGui = nil
+local statsConn = nil
+local pingLabel = nil
+local fpsLabel = nil
+
+local function updateStatsGui()
+    if not showPingEnabled and not showFpsEnabled then
+        if statsGui then statsGui:Destroy() statsGui = nil end
+        if statsConn then statsConn:Disconnect() statsConn = nil end
+        pingLabel = nil
+        fpsLabel = nil
+        return
+    end
+
+    if not statsGui then
+        statsGui = Instance.new("ScreenGui")
+        statsGui.Name = "fpsnpingcounter"
+        statsGui.ResetOnSpawn = false
+        statsGui.IgnoreGuiInset = true
+        statsGui.DisplayOrder = 999
+        local parentContainer = gethui and gethui() or game:GetService("CoreGui")
+        statsGui.Parent = parentContainer
+
+        pingLabel = Instance.new("TextLabel")
+        pingLabel.Size = UDim2.new(0, 185, 0, 30)
+        pingLabel.Position = UDim2.new(0.5, -375, 0.5, -15)
+        pingLabel.AnchorPoint = Vector2.new(0, 0)
+        pingLabel.BackgroundTransparency = 1
+        pingLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+        pingLabel.Font = Enum.Font.SciFi
+        pingLabel.TextSize = 24
+        pingLabel.TextXAlignment = Enum.TextXAlignment.Left
+        pingLabel.Text = "Ping: --"
+        pingLabel.Parent = statsGui
+
+        fpsLabel = Instance.new("TextLabel")
+        fpsLabel.Size = UDim2.new(0, 185, 0, 30)
+        fpsLabel.Position = UDim2.new(0.5, -375, 0.5, -15 + 25)
+        fpsLabel.AnchorPoint = Vector2.new(0, 0)
+        fpsLabel.BackgroundTransparency = 1
+        fpsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        fpsLabel.Font = Enum.Font.SciFi
+        fpsLabel.TextSize = 24
+        fpsLabel.TextXAlignment = Enum.TextXAlignment.Left
+        fpsLabel.Text = "FPS: --"
+        fpsLabel.Parent = statsGui
+
+        local StatsService = game:GetService("Stats")
+        local frameCount = 0
+        local lastTime = tick()
+
+        statsConn = game:GetService("RunService").RenderStepped:Connect(function()
+            frameCount = frameCount + 1
+            if tick() - lastTime >= 0.5 then
+                local currentFps = math.floor(frameCount / (tick() - lastTime))
+                frameCount = 0
+                lastTime = tick()
+                local ping = 0
+                pcall(function() ping = math.floor(StatsService.Network.ServerStatsItem["Data Ping"]:GetValue()) end)
+                if pingLabel and pingLabel.Parent then pingLabel.Text = "Ping: " .. ping end
+                if fpsLabel and fpsLabel.Parent then fpsLabel.Text = "FPS: " .. currentFps end
+            end
+        end)
+    end
+
+    if pingLabel then pingLabel.Visible = showPingEnabled end
+    if fpsLabel then fpsLabel.Visible = showFpsEnabled end
+end
+
+farmMiscSection:AddToggle("Show Ping", function(state)
+    showPingEnabled = state
+    updateStatsGui()
+end)
+farmMiscSection:AddToggle("Show FPS", function(state)
+    showFpsEnabled = state
+    updateStatsGui()
+end)
+
+local stabAuraSection = myTab:AddSection("Stab Aura", "better kill aura")
+stabAuraSection:AddParagraph("Additional Info", "this checks if you have actually stabbed the knife instead of just blindly killing anyone within a certain studs of you, makes you look more legit!\n\nCredit: @drowsynicolas")
+
+local stabAuraEnabled = false
+local stabAuraRange = 5
+local lastStabTime = 0
+
+local KNIFE_ANIMATIONS = {
+    ["109717378649651"] = true,
+    ["115592970007001"] = true,
+    ["2470501967"] = true,
+    ["2467577524"] = true,
+}
+
+local function setupCharacterAnimations(character)
+    local humanoid = character:WaitForChild("Humanoid")
+    local animator = humanoid:WaitForChild("Animator")
+    animator.AnimationPlayed:Connect(function(animTrack)
+        if not stabAuraEnabled then return end
+        local animId = string.match(animTrack.Animation.AnimationId, "%d+")
+        if animId and KNIFE_ANIMATIONS[animId] then lastStabTime = tick() end
+    end)
+end
+
+if LocalPlayer.Character then setupCharacterAnimations(LocalPlayer.Character) end
+LocalPlayer.CharacterAdded:Connect(setupCharacterAnimations)
+
+game:GetService("RunService").Heartbeat:Connect(function()
+    if not stabAuraEnabled then return end
+    if (tick() - lastStabTime) > 0.2 then return end
+
+    local character = LocalPlayer.Character
+    if not character then return end
+    local hrp = character:FindFirstChild("HumanoidRootPart")
+    local knife = character:FindFirstChild("Knife")
+    if not hrp or not knife then return end
+    
+    local events = knife:FindFirstChild("Events")
+    local handleTouched = events and events:FindFirstChild("HandleTouched")
+    if not handleTouched then return end
+
+    local hitSomeone = false
+
+    for _, target in ipairs(game.Players:GetPlayers()) do
+        if target ~= LocalPlayer and target.Character and target:GetAttribute("Alive") == true then
+            local tHrp = target.Character:FindFirstChild("HumanoidRootPart")
+            if tHrp then
+                local dist = (hrp.Position - tHrp.Position).Magnitude
+                if dist <= stabAuraRange then
+                    pcall(function()
+                        handleTouched:FireServer(tHrp)
+                        handleTouched:FireServer(tHrp.Position)
+                    end)
+                    hitSomeone = true
+                end
+            end
+        end
+    end
+    if hitSomeone then lastStabTime = 0 end
+end)
+
+stabAuraSection:AddToggle("Stab Aura", function(state)
+    stabAuraEnabled = state
+    lastStabTime = 0
+end)
+stabAuraSection:AddSlider("Aura Range", 0, 100, 5, function(value) stabAuraRange = value end)
+
+local voidFlingSection = myTab:AddSection("Void Fling", "MM2")
+voidFlingSection:AddParagraph("Additional Info", "there’s like a 80% to instantly void\n\nCredits @lzzzx")
+
+local rolesCache = {}
+task.spawn(function()
+    while LocalPlayer.Parent do
+        local success, data = pcall(function()
+            return game:GetService("ReplicatedStorage"):FindFirstChild("GetPlayerData", true):InvokeServer()
+        end)
+        if success and data then rolesCache = data end
+        task.wait(1.4)
+    end
+end)
+
+local function getMurd()
+    for playerName, data in pairs(rolesCache) do
+        if data.Role == "Murderer" and not data.Killed and not data.Dead then
+            local p = game.Players:FindFirstChild(playerName)
+            if p and p ~= LocalPlayer then return p end
+        end
+    end
+    return nil
+end
+
+local function getSheriff()
+    for playerName, data in pairs(rolesCache) do
+        if data.Role == "Sheriff" and not data.Killed and not data.Dead then
+            local p = game.Players:FindFirstChild(playerName)
+            if p and p ~= LocalPlayer then return p end
+        end
+    end
+    return nil
+end
+
+local isResetting = false
+local originalDestroyHeight = workspace.FallenPartsDestroyHeight
+
+local function touch(a, b)
+    pcall(function()
+        firetouchinterest(a, b, 0)
+        firetouchinterest(a, b, 1)
+    end)
+end
+
+local function fullyRestoreCharacter(character, savedData)
+    if not character or not savedData then return end
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoid or not rootPart then return end
+    humanoid.PlatformStand = false
+    for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do track:Stop() end
+    rootPart.AssemblyLinearVelocity = Vector3.zero
+    rootPart.AssemblyAngularVelocity = Vector3.zero
+    rootPart.CFrame = savedData.cframe
+    pcall(function()
+        sethiddenproperty(rootPart, "PhysicsRepRootRef", nil)
+        sethiddenproperty(rootPart, "PhysicsRepRootPart", nil)
+    end)
+    humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+    for _, part in ipairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then part.CanCollide = true end
+    end
+end
+
+local function resetPlayer(TargetPlayer, attempts)
+    if not TargetPlayer or not TargetPlayer.Parent then return end
+    local maxAttempts = attempts or 3
+    for currentAttempt = 1, maxAttempts do
+        if not TargetPlayer.Parent then break end
+        local tChar = TargetPlayer.Character
+        local tHum = tChar and tChar:FindFirstChildOfClass("Humanoid")
+        if tHum and tHum.Health <= 0 then break end
+
+        local Character = LocalPlayer.Character
+        if not Character then break end
+        local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+        local RootPart = Humanoid and Humanoid.RootPart
+        if not (Character and Humanoid and RootPart and tChar) then break end
+
+        local TRootPart = tChar:FindFirstChild("HumanoidRootPart")
+        local THead = tChar:FindFirstChild("Head")
+        if not TRootPart then break end
+
+        isResetting = true
+        local savedData = { cframe = RootPart.CFrame }
+        Humanoid.PlatformStand = true
+
+        local bv = Instance.new("BodyVelocity")
+        bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        bv.Velocity = Vector3.new(0, -50000, 0)
+        bv.Parent = RootPart
+
+        local bg = Instance.new("BodyGyro")
+        bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+        bg.P = 1000000
+        bg.Parent = RootPart
+
+        workspace.FallenPartsDestroyHeight = 0/0
+        local startTime = tick()
+        local completed = false
+        local conn
+        conn = game:GetService("RunService").Heartbeat:Connect(function()
+            if tick() - startTime > 1.0 or not TargetPlayer.Character or not TRootPart.Parent then
+                workspace.FallenPartsDestroyHeight = originalDestroyHeight
+                bv:Destroy()
+                bg:Destroy()
+                pcall(function()
+                    sethiddenproperty(RootPart, "PhysicsRepRootRef", nil)
+                    sethiddenproperty(RootPart, "PhysicsRepRootPart", nil)
+                end)
+                fullyRestoreCharacter(Character, savedData)
+                if conn then conn:Disconnect() end
+                completed = true
+                return
+            end
+            if TRootPart and TRootPart.Parent and Character and Character.Parent then
+                local headPos = THead and THead.Position or (TRootPart.Position + Vector3.new(0, 2.5, 0))
+                RootPart.CFrame = CFrame.new(headPos) * CFrame.Angles(math.pi / 2, 0, 0)
+                RootPart.AssemblyLinearVelocity = Vector3.new(0, -50000, 0)
+                RootPart.AssemblyAngularVelocity = Vector3.new(7500, 7500, 7500)
+                for i = 1, 5 do
+                    touch(RootPart, TRootPart)
+                    if THead then touch(RootPart, THead) end
+                end
+                pcall(function()
+                    sethiddenproperty(RootPart, "PhysicsRepRootRef", InstanceHandle.new(TRootPart))
+                    sethiddenproperty(RootPart, "PhysicsRepRootPart", TRootPart)
+                end)
+            end
+        end)
+
+        while not completed and TargetPlayer.Parent do task.wait(0.05) end
+        if not completed then
+            workspace.FallenPartsDestroyHeight = originalDestroyHeight
+            if bv.Parent then bv:Destroy() end
+            if bg.Parent then bg:Destroy() end
+            pcall(function()
+                sethiddenproperty(RootPart, "PhysicsRepRootRef", nil)
+                sethiddenproperty(RootPart, "PhysicsRepRootPart", nil)
+            end)
+            fullyRestoreCharacter(Character, savedData)
+            if conn then conn:Disconnect() end
+        end
+        isResetting = false
+        task.wait(0.15)
+        local postHum = tChar and tChar:FindFirstChildOfClass("Humanoid")
+        if not postHum or postHum.Health <= 0 then break end
+    end
+end
+
+local autoMurdEnabled, autoSheriffEnabled, autoAllEnabled, autoSelectedEnabled = false, false, false, false
+local selectedPlayerName = ""
+
+task.spawn(function()
+    while task.wait(2) do
+        if autoMurdEnabled then
+            local target = getMurd()
+            if target then resetPlayer(target, 4) end
+        end
+        if autoSheriffEnabled then
+            local target = getSheriff()
+            if target then resetPlayer(target, 4) end
+        end
+        if autoAllEnabled then
+            for _, p in ipairs(game.Players:GetPlayers()) do
+                if p ~= LocalPlayer and p:GetAttribute("Alive") == true then
+                    resetPlayer(p, 4)
+                    task.wait(0.2)
+                end
+            end
+        end
+        if autoSelectedEnabled and selectedPlayerName ~= "" then
+            local target = game.Players:FindFirstChild(selectedPlayerName)
+            if target and target:GetAttribute("Alive") == true then resetPlayer(target, 4) end
+        end
+    end
+end)
+
+voidFlingSection:AddToggle("Auto Void Fling Murderer", function(state) autoMurdEnabled = state end)
+voidFlingSection:AddToggle("Auto Void Fling Sheriff", function(state) autoSheriffEnabled = state end)
+voidFlingSection:AddToggle("Auto Void Fling All", function(state) autoAllEnabled = state end)
+
+local function getPlayerList()
+    local list = {}
+    for _, p in ipairs(game.Players:GetPlayers()) do
+        if p ~= LocalPlayer then table.insert(list, p.Name) end
+    end
+    return list
+end
+
+local playerDropdown = voidFlingSection:AddDropdown("Select Player", getPlayerList(), function(selected) selectedPlayerName = selected end)
+
+local function updatePlayerDropdown()
+    if not playerDropdown then return end
+    local newList = getPlayerList()
+    if selectedPlayerName ~= "" then
+        local stillHere = false
+        for _, name in ipairs(newList) do
+            if name == selectedPlayerName then stillHere = true break end
+        end
+        if not stillHere then selectedPlayerName = "" end
+    end
+    pcall(function() playerDropdown:Refresh(newList) end)
+end
+
+game.Players.PlayerAdded:Connect(updatePlayerDropdown)
+game.Players.PlayerRemoving:Connect(updatePlayerDropdown)
+
+voidFlingSection:AddToggle("Auto Void Fling Selected Player", function(state) autoSelectedEnabled = state end)
+
+voidFlingSection:AddButton("Void Fling Murderer", function()
+    local target = getMurd()
+    if target then resetPlayer(target, 4) end
+end)
+voidFlingSection:AddButton("Void Fling Sheriff", function()
+    local target = getSheriff()
+    if target then resetPlayer(target, 4) end
+end)
+voidFlingSection:AddButton("Void Fling All", function()
+    for _, p in ipairs(game.Players:GetPlayers()) do
+        if p ~= LocalPlayer and p:GetAttribute("Alive") == true then
+            resetPlayer(p, 4)
+            task.wait(0.2)
+        end
+    end
+end)
+voidFlingSection:AddButton("Void Fling Selected Player", function()
+    if selectedPlayerName ~= "" then
+        local target = game.Players:FindFirstChild(selectedPlayerName)
+        if target then resetPlayer(target, 4) end
+    end
+end)
+
+local invisSection = myTab:AddSection("FE Invisible", "UNIVERSAL")
+invisSection:AddParagraph("Additional Info", "all credits goes to @not_.gato for deobfuscating this\n\nyes this is skidded, no i don’t care <3")
+
+local invisibleEnabled = false
+local hideInProgress = false
+local invisConnection = nil
+local realPosition = Vector3.zero
+
+local function startInvisibility()
+    if invisConnection then return end
+    invisConnection = RunService.Heartbeat:Connect(function()
+        if not invisibleEnabled or hideInProgress then return end
+
+        local character = LocalPlayer.Character
+        local humanoid = character and character:FindFirstChild("Humanoid")
+        local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+
+        if not character or not humanoid or not rootPart or not rootPart.Parent then return end
+
+        hideInProgress = true
+
+        local baseCFrame = rootPart.CFrame
+        local originalCFrame = baseCFrame
+        local originalCameraOffset = humanoid.CameraOffset
+        local originalLinearVelocity = rootPart.AssemblyLinearVelocity
+        local originalAngularVelocity = rootPart.AssemblyAngularVelocity
+
+        realPosition = originalCFrame.Position
+
+        local hiddenCFrame = originalCFrame * CFrame.new(0, -200000, 0)
+
+        rootPart.CFrame = hiddenCFrame
+        rootPart.AssemblyLinearVelocity = Vector3.zero
+        rootPart.AssemblyAngularVelocity = Vector3.zero
+        humanoid.CameraOffset = originalCameraOffset + Vector3.new(0, 200000, 0)
+
+        RunService.RenderStepped:Wait()
+
+        if rootPart and rootPart.Parent then
+            local postWaitCFrame = rootPart.CFrame
+            if (postWaitCFrame.Position - hiddenCFrame.Position).Magnitude > 1000 then
+                rootPart.CFrame = postWaitCFrame
+            else
+                rootPart.CFrame = originalCFrame
+            end
+            local postVelocity = rootPart.AssemblyLinearVelocity
+            if postVelocity.Magnitude > 0 then
+                rootPart.AssemblyLinearVelocity = postVelocity
+            else
+                rootPart.AssemblyLinearVelocity = originalLinearVelocity
+            end
+            rootPart.AssemblyAngularVelocity = originalAngularVelocity
+        end
+
+        if humanoid and humanoid.Parent then humanoid.CameraOffset = originalCameraOffset end
+        hideInProgress = false
+    end)
+end
+
+local function stopInvisibility()
+    if invisConnection then
+        invisConnection:Disconnect()
+        invisConnection = nil
+    end
+    local character = LocalPlayer.Character
+    local humanoid = character and character:FindFirstChild("Humanoid")
+    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+    if humanoid and rootPart then
+        humanoid.CameraOffset = Vector3.zero
+        pcall(function() rootPart.CFrame = CFrame.new(rootPart.CFrame.Position + Vector3.new(0, 200000, 0)) end)
+    end
+end
+
+invisSection:AddToggle("Invisibility", function(state)
+    invisibleEnabled = state
+    if state then startInvisibility() else stopInvisibility() end
+end)
+
+LocalPlayer.CharacterAdded:Connect(function()
+    if invisibleEnabled then
+        stopInvisibility()
+        task.wait(0.1)
+        startInvisibility()
+    end
 end)
 
 RootNicolas:GiveTask(function()
@@ -1953,9 +2077,7 @@ RootNicolas:GiveTask(function()
     disableEquipSound()
     disableForceField()
     disableFireColor()
-    for character, data in pairs(charData) do
-        cleanCharacter(character)
-    end
+    for character, data in pairs(charData) do cleanCharacter(character) end
     charData = {}
     controllerFeatures.fixScoreboard = false
     controllerFeatures.perkEnabled = false
@@ -1980,4 +2102,16 @@ RootNicolas:GiveTask(function()
     infJumpStop()
     personalFeatures.autoBroom = false
     autoBroomStop()
+    if showPingEnabled or showFpsEnabled then
+        showPingEnabled = false
+        showFpsEnabled = false
+        updateStatsGui()
+    end
+    if stabAuraEnabled then
+        stabAuraEnabled = false
+    end
+    if invisibleEnabled then
+        invisibleEnabled = false
+        stopInvisibility()
+    end
 end)
