@@ -358,7 +358,7 @@ if LocalPlayer.Character then
 end
 
 local gunFeaturesSection = myTab:AddSection("Gun Features", "Gun Stuff")
-gunFeaturesSection:AddParagraph("Additional Info", "This plugin works for both MM2 and MMV\n\nCredits: @drowsynicolas")
+gunFeaturesSection:AddParagraph("Additional Info", "This plugin works for both MM2 and MMV\n\nCredits: @drowsynicolas", false)
 gunFeaturesSection:AddToggle("Disable Gun Animations", function(bool)
     gunFeatures.blockAnims = bool
     if bool then
@@ -528,7 +528,7 @@ local function disableSpectateUI()
 end
 
 local controllerSection = myTab:AddSection("Controller+", "Mobile Controller Support")
-controllerSection:AddParagraph("Additional Info", "Gives you a better mobile controller experience.\n\nCredits: @drowsynicolas")
+controllerSection:AddParagraph("Additional Info", "Gives you a better mobile controller experience.\n\nCredits: @drowsynicolas", false)
 controllerSection:AddToggle("Fix Scoreboard Bug", function(bool)
     controllerFeatures.fixScoreboard = bool
     if bool then enableFixScoreboard() else disableFixScoreboard() end
@@ -551,7 +551,7 @@ controllerSection:AddKeybind("Toggle Spectate", "ButtonR3", function()
     if controllerFeatures.spectateKeybinds then SpectateService:ToggleSpectate() end
 end)
 
-local bombJumpParagraph = controllerSection:AddParagraph("Bomb Jump", "All credits goes to @lzzzx")
+local bombJumpParagraph = controllerSection:AddParagraph("Bomb Jump", "All credits goes to @lzzzx", false)
 local bombJumpEnabled = false
 local bombJumpDebounce = false
 local autoGetBomb = false
@@ -772,7 +772,7 @@ local function disableWaterImmunity()
 end
 
 local waterSection = myTab:AddSection("Water Proof", "Water Immunity")
-waterSection:AddParagraph("Additional Info", "Makes you immune to water\n\nCredits: @drowsynicolas")
+waterSection:AddParagraph("Additional Info", "Makes you immune to water\n\nCredits: @drowsynicolas", false)
 waterSection:AddToggle("Water Immunity", function(bool)
     if bool then enableWaterImmunity() else disableWaterImmunity() end
 end)
@@ -799,15 +799,15 @@ local function disableAntiTrade()
 end
 
 local tradeSection = myTab:AddSection("Disable Trade", "fucks the trade system")
-tradeSection:AddParagraph("Additional Info", "Destroys the system trade relies on\n\nCredits: @drowsynicolas")
+tradeSection:AddParagraph("Additional Info", "Destroys the system trade relies on\n\nCredits: @drowsynicolas", false)
 tradeSection:AddToggle("Disable Trade", function(bool)
     if bool then enableAntiTrade() else disableAntiTrade() end
 end)
 
 local messageSection = myTab:AddSection("Client Sided Message", "just for fun")
-messageSection:AddParagraph("Additional Info", "sends a message client sided, u can say anything it'll go through\n\nCredits: @drowsynicolas")
+messageSection:AddParagraph("Additional Info", "sends a message client sided, u can say anything it'll go through\n\nCredits: @drowsynicolas", false)
 local messageText = ""
-messageSection:AddTextBox("Your message", function(text) messageText = text end)
+messageSection:AddTextBox("Your message", "Type message...", function(text) messageText = text end)
 messageSection:AddButton("Send Message", function()
     if messageText == "" then return end
     local character = LocalPlayer.Character
@@ -816,7 +816,7 @@ messageSection:AddButton("Send Message", function()
 end)
 
 local serverPosSection = myTab:AddSection("Estimated Server Pos", "shows your server pos")
-serverPosSection:AddParagraph("Additional Info", "creates a marker where the server thinks you are based on your ping\n\nCredits: @drowsynicolas")
+serverPosSection:AddParagraph("Additional Info", "creates a marker where the server thinks you are based on your ping\n\nCredits: @drowsynicolas", false)
 
 local serverPosEnabled = false
 local serverPosMarker = nil
@@ -933,7 +933,7 @@ serverPosSection:AddColorpicker("Marker Color", Color3.fromRGB(255, 255, 255), f
 end)
 
 local autoPerkSection = myTab:AddSection("Auto Perk", "automatically equips perks")
-autoPerkSection:AddParagraph("Additional Info", "equips the perk you picked for the current map when the map loads\n\nthe UI for the equipped perk doesn't change with this but this plugin works\n\nCredits: @drowsynicolas")
+autoPerkSection:AddParagraph("Additional Info", "equips the perk you picked for the current map when the map loads\n\nthe UI for the equipped perk doesn't change with this but this plugin works\n\nCredits: @drowsynicolas", false)
 
 local autoPerkEnabled = false
 local autoPerkMapConn = nil
@@ -1018,9 +1018,9 @@ autoPerkSection:AddToggle("Auto Perk", function(bool)
     autoPerkEnabled = bool
     if bool then startAutoPerk() else stopAutoPerk() end
 end)
-autoPerkSection:AddParagraph("Valid Perks", "Type the perk name for each map. Valid inputs: Footsteps, Xray, Trap, Sprint, Sleight, Ninja, Haste, Ghost, FakeGun, Decoy")
+autoPerkSection:AddParagraph("Valid Perks", "Type the perk name for each map. Valid inputs: Footsteps, Xray, Trap, Sprint, Sleight, Ninja, Haste, Ghost, FakeGun, Decoy", false)
 for _, mapEntry in ipairs(MAP_LIST) do
-    autoPerkSection:AddTextBox(mapEntry.name, function(text)
+    autoPerkSection:AddTextBox(mapEntry.name, "Enter perk...", function(text)
         if text == "" then return end
         local perk = normalizePerk(text)
         if perk then
@@ -1036,7 +1036,7 @@ for _, mapEntry in ipairs(MAP_LIST) do
 end
 
 local itemTintSection = myTab:AddSection("Tool Tint", "cosmetic")
-itemTintSection:AddParagraph("Additional Info", "tints any tool you hold\n\nCredits: @drowsynicolas")
+itemTintSection:AddParagraph("Additional Info", "tints any tool you hold\n\nCredits: @drowsynicolas", false)
 
 local toolTintEnabled = false
 local toolTintColor = Color3.fromRGB(255, 255, 255)
@@ -1149,7 +1149,7 @@ itemTintSection:AddColorpicker("Tool Tint Color", Color3.fromRGB(255, 255, 255),
 end)
 
 local chatSection = myTab:AddSection("Custom Chat", "Customize your chat!")
-chatSection:AddParagraph("Additional Info", "custom chat sound requires the sound to be from github\n\nexample: /nonchalantnicolas/yoshi-lick/main/copy_588622E8-9E6A-4DD1-9673-1858746082F1.mp3\n\nCredits: @drowsynicolas")
+chatSection:AddParagraph("Additional Info", "custom chat sound requires the sound to be from github\n\nexample: /nonchalantnicolas/yoshi-lick/main/copy_588622E8-9E6A-4DD1-9673-1858746082F1.mp3\n\nCredits: @drowsynicolas", false)
 
 local chatColorEnabled = false
 local chatSoundEnabled = false
@@ -1290,7 +1290,7 @@ chatSection:AddToggle("Custom Chat Sound", function(bool)
     if bool then enableChatSound() else disableChatSound() end
 end)
 chatSection:AddToggle("Mute Others Chat Sound", function(bool) muteOthersChatSound = bool end)
-chatSection:AddTextBox("Sound URL", function(text)
+chatSection:AddTextBox("Sound URL", "Enter URL...", function(text)
     if text == "" then return end
     loadChatSound(text)
 end)
@@ -1304,7 +1304,7 @@ chatSection:AddColorpicker("Chat Text Color", Color3.fromRGB(0, 0, 0), function(
 end)
 
 local emotesSection = myTab:AddSection("Emotes", "play any emote")
-emotesSection:AddParagraph("Additional Info", "play any emote with a keybind\n\nCredits: @drowsynicolas")
+emotesSection:AddParagraph("Additional Info", "play any emote with a keybind\n\nCredits: @drowsynicolas", false)
 
 local emoteKeybindsEnabled = false
 
@@ -1328,7 +1328,7 @@ emotesSection:AddKeybind("Zombie", "null", function() playEmote("zombie") end)
 emotesSection:AddKeybind("Headless", "null", function() playEmote("headless") end)
 
 local eventSection = myTab:AddSection("Event", "For MM2 Events!")
-eventSection:AddParagraph("Additional Info", "counter for your current event currency and how much you need until you get the final reward tier\n\nCredits: @drowsynicolas")
+eventSection:AddParagraph("Additional Info", "counter for your current event currency and how much you need until you get the final reward tier\n\nCredits: @drowsynicolas", false)
 
 local eventFeatures = { showCurrent = false, showUntil = false }
 local EVENT_TARGET = 100000
@@ -1471,7 +1471,7 @@ eventSection:AddToggle("Show Candies Until Emberbow", function(bool)
 end)
 
 local personalSection = myTab:AddSection("Personal", "hi")
-personalSection:AddParagraph("Additional Info", "code i'd rather put into my plugin than execute it individually\n\nall credits obviously go to me haha @drowsynicolas")
+personalSection:AddParagraph("Additional Info", "code i'd rather put into my plugin than execute it individually\n\nall credits obviously go to me haha @drowsynicolas", false)
 
 local personalFeatures = { infJump = false, autoBroom = false }
 local infJumpBoost = 40
@@ -1546,8 +1546,8 @@ personalSection:AddToggle("Auto Broom", function(bool)
 end)
 
 local farmMiscSection = myTab:AddSection("Farm Misc", "MM2")
-farmMiscSection:AddParagraph("Additional Info", "just some features made for auto farming\n\nCredit: @drowsynicolas")
-farmMiscSection:AddParagraph("Safe Spawn", "prevents you from being killed first when you spawn in the map. yes, i know this is already a feature in the main auto farm tab, it’s just that i like this code better")
+farmMiscSection:AddParagraph("Additional Info", "just some features made for auto farming\n\nCredit: @drowsynicolas", false)
+farmMiscSection:AddParagraph("Safe Spawn", "prevents you from being killed first when you spawn in the map. yes, i know this is already a feature in the main auto farm tab, it’s just that i like this code better", false)
 
 local safeSpawnEnabled = false
 local LOCK_POSITION = Vector3.new(0, 999, 0)
@@ -1595,7 +1595,7 @@ end)
 
 farmMiscSection:AddToggle("Safe Spawn", function(state) safeSpawnEnabled = state end)
 
-farmMiscSection:AddParagraph("FPS Capper", "caps your fps so your device uses less power resulting in it not overheating and causing a house fire. keep in mind capping fps persist, so to uncap your fps close roblox entirely. or just disable the toggle ;-;")
+farmMiscSection:AddParagraph("FPS Capper", "caps your fps so your device uses less power resulting in it not overheating and causing a house fire. keep in mind capping fps persist, so to uncap your fps close roblox entirely. or just disable the toggle ;-;", false)
 local fpsCapperEnabled = false
 local fpsCapLimit = 60
 
@@ -1611,8 +1611,8 @@ farmMiscSection:AddToggle("FPS Capper", function(state)
     fpsCapperEnabled = state
     applyFpsCap()
 end)
-farmMiscSection:AddParagraph("Cap Limit", "")
-farmMiscSection:AddTextBox("Set FPS Cap", function(text)
+farmMiscSection:AddParagraph("Cap Limit", "", false)
+farmMiscSection:AddTextBox("Set FPS Cap", "60", function(text)
     local num = tonumber(text)
     if num and num >= 5 then
         fpsCapLimit = math.floor(num)
@@ -1703,7 +1703,7 @@ farmMiscSection:AddToggle("Show FPS", function(state)
 end)
 
 local stabAuraSection = myTab:AddSection("Stab Aura", "better kill aura")
-stabAuraSection:AddParagraph("Additional Info", "this checks if you have actually stabbed the knife instead of just blindly killing anyone within a certain studs of you, makes you look more legit!\n\nCredit: @drowsynicolas")
+stabAuraSection:AddParagraph("Additional Info", "this checks if you have actually stabbed the knife instead of just blindly killing anyone within a certain studs of you, makes you look more legit!\n\nCredit: @drowsynicolas", false)
 
 local stabAuraEnabled = false
 local stabAuraRange = 5
@@ -1770,7 +1770,7 @@ end)
 stabAuraSection:AddSlider("Aura Range", 0, 100, 5, function(value) stabAuraRange = value end)
 
 local voidFlingSection = myTab:AddSection("Void Fling", "MM2")
-voidFlingSection:AddParagraph("Additional Info", "there’s like a 80% to instantly void\n\nCredits @lzzzx")
+voidFlingSection:AddParagraph("Additional Info", "there’s like a 80% to instantly void\n\nCredits @lzzzx", false)
 
 local rolesCache = {}
 task.spawn(function()
@@ -1971,7 +1971,7 @@ local function updatePlayerDropdown()
         end
         if not stillHere then selectedPlayerName = "" end
     end
-    pcall(function() playerDropdown:Refresh(newList) end)
+    pcall(function() playerDropdown:ChangeItems(newList) end)
 end
 
 game.Players.PlayerAdded:Connect(updatePlayerDropdown)
@@ -2003,7 +2003,7 @@ voidFlingSection:AddButton("Void Fling Selected Player", function()
 end)
 
 local invisSection = myTab:AddSection("FE Invisible", "UNIVERSAL")
-invisSection:AddParagraph("Additional Info", "all credits goes to @not_.gato for deobfuscating this\n\nyes this is skidded, no i don’t care <3")
+invisSection:AddParagraph("Additional Info", "all credits goes to @not_.gato for deobfuscating this\n\nyes this is skidded, no i don’t care <3", false)
 
 local invisibleEnabled = false
 local hideInProgress = false
